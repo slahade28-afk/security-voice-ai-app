@@ -32,10 +32,17 @@ jobs:
           accept-android-sdk-licenses: 'true'
           log-accepted-android-sdk-licenses: 'false'
 
-      - name: Install Android build tools
+      - name: Use the same Android SDK for Buildozer
+        shell: bash
         run: |
-          sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;37.0.0"
+          echo "ANDROIDSDK=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "Using SDK: $ANDROID_HOME"
+
+      - name: Install Android platforms and build tools
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;37.0.0"
+          ls "$ANDROID_HOME/build-tools/37.0.0"
 
       - name: Install system packages
         run: |
@@ -57,6 +64,7 @@ jobs:
         run: |
           test -f main.py
           test -f buildozer.spec
+          echo "Project files found"
 
       - name: Build APK
         shell: bash
@@ -73,6 +81,7 @@ jobs:
             bin/*.apk
             buildozer.log
           if-no-files-found: warn
+
 
 
 
