@@ -1,5 +1,6 @@
 
 [app]
+android.permissions = RECORD_AUDIO
 p4a.branch = develop
 title = Security Voice Command AI
 package.name = securityassistant
