@@ -42,11 +42,13 @@ jobs:
       - name: Install Android platforms and build tools
         shell: bash
         run: |
+          set +o pipefail
           yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;37.0.0"
+          set -o pipefail
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           mkdir -p "$HOME/.buildozer/android/platform/android-sdk/licenses"
           cp -r "$ANDROID_HOME/licenses/." "$HOME/.buildozer/android/platform/android-sdk/licenses/"
-          ls "$ANDROID_HOME/build-tools/37.0.0"
+          ls "$ANDROID_HOME/build-tools/35.0.0"
 
       - name: Install system packages
         run: |
@@ -85,6 +87,7 @@ jobs:
             bin/*.apk
             buildozer.log
           if-no-files-found: warn
+
 
   
 
