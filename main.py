@@ -116,12 +116,13 @@ class SecurityAssistantApp(App):
             )
 
     def show_help(self, instance):
-        self.output.text = (
-            "Available Commands:\n"
-            "hello - Greeting\n"
-            "status - App status\n"
-            "security - Security tip\n"
-            "help - Commands list"
+    self.output.text = (
+        "उपलब्ध आदेश:\n"
+        "hello - नमस्कार\n"
+        "status - ॲपची स्थिती\n"
+        "security - सुरक्षा सूचना\n"
+        "help - मदत"
+    
         )
 
 
