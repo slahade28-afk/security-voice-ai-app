@@ -1,27 +1,80 @@
-[app]
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.core.window import Window
 
-title = Security Voice Command AI
-package.name = securityassistant
-package.domain = org.securityai
 
-source.dir = .
-source.include_exts = py,kv,png,jpg,atlas
+class SecurityAssistantApp(App):
+    def build(self):
+        self.title = "Security Voice Command AI"
+        Window.clearcolor = (0.06, 0.09, 0.15, 1)
 
-version = 0.1
+        layout = BoxLayout(
+            orientation="vertical",
+            padding=20,
+            spacing=15
+        )
 
-requirements = python3,kivy
+        layout.add_widget(Label(
+            text="SECURITY AI ASSISTANT",
+            font_size="22sp",
+            size_hint_y=None,
+            height=60
+        ))
 
-orientation = portrait
-fullscreen = 0
+        self.output = Label(
+            text="Namaskar! Mi tumcha Security Assistant aahe."
+        )
+        layout.add_widget(self.output)
 
-android.api = 33
-android.minapi = 23
+        self.command_input = TextInput(
+            hint_text="Command type kara...",
+            multiline=False,
+            size_hint_y=None,
+            height=55
+        )
+        layout.add_widget(self.command_input)
 
-android.archs = arm64-v8a
+        run_button = Button(
+            text="Run Command",
+            size_hint_y=None,
+            height=55
+        )
+        run_button.bind(on_press=self.run_command)
+        layout.add_widget(run_button)
 
-android.accept_sdk_license = True
+        help_button = Button(
+            text="Help",
+            size_hint_y=None,
+            height=50
+        )
+        help_button.bind(on_press=self.show_help)
+        layout.add_widget(help_button)
 
-[buildozer]
+        return layout
 
-log_level = 2
-warn_on_root = 1
+    def run_command(self, instance):
+        command = self.command_input.text.strip().lower()
+
+        if command in ("hello", "hi", "namaskar"):
+            response = "Namaskar! Mi tumchi madat karayla tayar aahe."
+        elif command in ("help", "madat"):
+            response = "Commands: hello, status, security, help"
+        elif command in ("status", "stithi"):
+            response = "Security Assistant chalu aahe."
+        elif command in ("security", "suraksha"):
+            response = "Anolakhi links ughadu naka. OTP ani password konalahi sangu naka."
+        else:
+            response = "Command samajla nahi. Help button daba."
+
+        self.output.text = response
+        self.command_input.text = ""
+
+    def show_help(self, instance):
+        self.output.text = "Try kara: hello, status, security, help"
+
+
+if __name__ == "__main__":
+    SecurityAssistantApp().run()
