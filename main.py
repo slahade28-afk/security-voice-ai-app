@@ -1,4 +1,5 @@
 
+
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
@@ -14,11 +15,18 @@ class SecurityAssistantApp(App):
         self.title = "Security Voice Command AI"
         Window.clearcolor = (0.04, 0.07, 0.12, 1)
 
+        scroll = ScrollView(
+            do_scroll_x=False,
+            do_scroll_y=True
+        )
+
         root = BoxLayout(
             orientation="vertical",
             padding=16,
-            spacing=12
+            spacing=12,
+            size_hint_y=None
         )
+        root.bind(minimum_height=root.setter("height"))
 
         title = Label(
             text="[b]SECURITY AI ASSISTANT[/b]",
@@ -57,6 +65,7 @@ class SecurityAssistantApp(App):
             size_hint_y=None,
             height=52
         )
+        self.command.bind(on_text_validate=self.run_command)
         root.add_widget(self.command)
 
         run_button = Button(
@@ -76,14 +85,15 @@ class SecurityAssistantApp(App):
         root.add_widget(help_button)
 
         footer = Label(
-            text="Stay Safe • Protect Your Privacy",
+            text="Stay Safe - Protect Your Privacy",
             font_size="12sp",
             size_hint_y=None,
             height=35
         )
         root.add_widget(footer)
 
-        return root
+        scroll.add_widget(root)
+        return scroll
 
     def run_command(self, instance):
         command = self.command.text.lower().strip()
@@ -92,18 +102,14 @@ class SecurityAssistantApp(App):
             self.output.text = (
                 "Namaskar! Mi tumchi madat karayla tayar aahe."
             )
-
         elif command == "status":
             self.output.text = "Security Assistant chalu aahe."
-
         elif command == "security":
             self.output.text = (
                 "Security Tip: OTP ani password konalahi sangu naka."
             )
-
         elif command == "help":
             self.show_help(instance)
-
         else:
             self.output.text = (
                 "Command samajla nahi. HELP button daba."
@@ -121,5 +127,4 @@ class SecurityAssistantApp(App):
 
 if __name__ == "__main__":
     SecurityAssistantApp().run()
-+0
 
