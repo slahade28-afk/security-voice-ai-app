@@ -1,5 +1,6 @@
 
 [app]
+p4a.branch = issue_fix
 title = Security Voice Command AI
 package.name = securityassistant
 package.domain = org.securityai
