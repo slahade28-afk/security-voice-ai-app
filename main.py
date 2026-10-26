@@ -1,5 +1,3 @@
-
-
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
@@ -7,13 +5,15 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
+from kivy.metrics import dp
 
 
 class SecurityAssistantApp(App):
 
     def build(self):
-        self.title = "Security Voice Command AI"
-        Window.clearcolor = (0.04, 0.07, 0.12, 1)
+        self.title = "Security Assistant"
+
+        Window.clearcolor = (0.08, 0.10, 0.15, 1)
 
         scroll = ScrollView(
             do_scroll_x=False,
@@ -22,110 +22,124 @@ class SecurityAssistantApp(App):
 
         root = BoxLayout(
             orientation="vertical",
-            padding=16,
-            spacing=12,
+            padding=dp(15),
+            spacing=dp(12),
             size_hint_y=None
         )
         root.bind(minimum_height=root.setter("height"))
 
         title = Label(
-            text="[b]SECURITY AI ASSISTANT[/b]",
+            text="[b]🛡️ सुरक्षा सहाय्यक[/b]",
             markup=True,
-            font_size="22sp",
+            font_size="26sp",
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
         root.add_widget(title)
 
         subtitle = Label(
-            text="Your Personal Security Helper",
-            font_size="14sp",
+            text="नमस्कार! मी तुमचा Security Assistant आहे.",
+            font_size="17sp",
             size_hint_y=None,
-            height=35
+            height=dp(60)
         )
         root.add_widget(subtitle)
 
-        self.output = Label(
-            text="Namaskar! Mi tumcha Security Assistant aahe.",
+        self.output = TextInput(
+            text="येथे उत्तर दिसेल.",
+            readonly=True,
+            multiline=True,
             font_size="17sp",
-            halign="center",
-            valign="middle",
             size_hint_y=None,
-            height=120
-        )
-        self.output.bind(
-            size=lambda instance, value:
-            setattr(instance, "text_size", value)
+            height=dp(180),
+            background_color=(0.14, 0.17, 0.23, 1),
+            foreground_color=(1, 1, 1, 1)
         )
         root.add_widget(self.output)
 
         self.command = TextInput(
-            hint_text="Command liha...",
+            hint_text="इथे कमांड लिहा...",
             multiline=False,
+            font_size="18sp",
             size_hint_y=None,
-            height=52
+            height=dp(55)
         )
-        self.command.bind(on_text_validate=self.run_command)
+        self.command.bind(
+            on_text_validate=self.run_command
+        )
         root.add_widget(self.command)
 
         run_button = Button(
-            text="RUN COMMAND",
+            text="कमांड चालवा",
+            font_size="18sp",
             size_hint_y=None,
-            height=55
+            height=dp(55)
         )
         run_button.bind(on_press=self.run_command)
         root.add_widget(run_button)
 
         help_button = Button(
-            text="HELP",
+            text="मदत",
+            font_size="18sp",
             size_hint_y=None,
-            height=48
+            height=dp(55)
         )
         help_button.bind(on_press=self.show_help)
         root.add_widget(help_button)
 
-        footer = Label(
-            text="Stay Safe - Protect Your Privacy",
-            font_size="12sp",
+        root.add_widget(Label(
+            text="सुरक्षित रहा • विचारपूर्वक इंटरनेट वापरा",
+            font_size="13sp",
             size_hint_y=None,
-            height=35
-        )
-        root.add_widget(footer)
+            height=dp(45)
+        ))
 
         scroll.add_widget(root)
         return scroll
 
     def run_command(self, instance):
-        command = self.command.text.lower().strip()
+        command = self.command.text.strip().lower()
 
-        if command in ("hello", "hi", "namaskar"):
+        if command in ("hello", "hi", "namaskar", "नमस्कार"):
+            self.output.text = "नमस्कार! मी तुमचा Security Assistant आहे."
+
+        elif command in ("status", "स्थिती"):
+            self.output.text = "ॲप व्यवस्थित सुरू आहे."
+
+        elif command in ("security", "सुरक्षा"):
             self.output.text = (
-                "Namaskar! Mi tumchi madat karayla tayar aahe."
+                "सुरक्षा सूचना:\n"
+                "1. मजबूत पासवर्ड वापरा.\n"
+                "2. OTP कोणालाही सांगू नका.\n"
+                "3. अनोळखी लिंक उघडू नका.\n"
+                "4. ॲप्स विश्वसनीय ठिकाणाहूनच इन्स्टॉल करा."
             )
-        elif command == "status":
-            self.output.text = "Security Assistant chalu aahe."
-        elif command == "security":
-            self.output.text = (
-                "Security Tip: OTP ani password konalahi sangu naka."
-            )
-        elif command == "help":
+
+        elif command in ("help", "मदत"):
             self.show_help(instance)
+
+        elif command == "":
+            self.output.text = "कृपया आधी कमांड लिहा."
+
         else:
             self.output.text = (
-                "Command samajla nahi. HELP button daba."
+                "ही कमांड समजली नाही.\n"
+                "मदत बटण दाबा किंवा help लिहा."
             )
 
+        self.command.text = ""
+
     def show_help(self, instance):
-    self.output.text = (
-        "उपलब्ध आदेश:\n"
-        "hello - नमस्कार\n"
-        "status - ॲपची स्थिती\n"
-        "security - सुरक्षा सूचना\n"
-        "help - मदत"
-    
+        self.output.text = (
+            "उपलब्ध कमांड:\n\n"
+            "hello - नमस्कार\n"
+            "status - ॲपची स्थिती\n"
+            "security - सुरक्षा सूचना\n"
+            "help - मदत\n\n"
+            "कमांड बॉक्समध्ये कमांड लिहा "
+            "आणि 'कमांड चालवा' दाबा."
         )
 
 
 if __name__ == "__main__":
     SecurityAssistantApp().run()
-
