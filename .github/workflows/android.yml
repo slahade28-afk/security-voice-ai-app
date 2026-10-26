@@ -26,6 +26,43 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-not-set}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-not-set}"
+
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+
+          if [ -z "$SDK_DIR" ] || [ ! -d "$SDK_DIR" ]; then
+            echo "ERROR: Android SDK directory not found"
+            exit 1
+          fi
+
+          SDKMANAGER="$(find "$SDK_DIR/cmdline-tools" \
+            -type f -name sdkmanager 2>/dev/null | head -n 1)"
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found"
+            find "$SDK_DIR" -maxdepth 5 -type f \
+              -name sdkmanager 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "SDKMANAGER_PATH=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "Found sdkmanager: $SDKMANAGER"
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          "$SDKMANAGER_PATH" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -40,38 +77,20 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install buildozer cython==0.29.36
 
-      - name: Set Android SDK environment
-        run: |
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/28.2.13676358" >> "$GITHUB_ENV"
-
-      - name: Accept Android SDK licenses
+      - name: Fix legacy sdkmanager path
         shell: bash
         run: |
-          set +o pipefail
-          yes | sdkmanager --licenses
-          set -o pipefail
-
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      - name: Fix sdkmanager path for Buildozer
-        shell: bash
-        run: |
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found in Android SDK"
-            exit 1
-          fi
           mkdir -p "$HOME/.buildozer/android/platform/android-sdk/tools/bin"
-          printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$SDKMANAGER" > "$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
-          chmod +x "$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+
+          printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' \
+            "$SDKMANAGER_PATH" \
+            > "$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+
+          chmod +x \
+            "$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
 
       - name: Check project files
+        shell: bash
         run: |
           ls -la
           test -f main.py
@@ -90,6 +109,7 @@ jobs:
             bin/*.apk
             .buildozer/android/platform/build-*/build/python-installs/*/buildozer.log
           if-no-files-found: warn
+
 
 
   
