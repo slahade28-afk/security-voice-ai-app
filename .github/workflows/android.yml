@@ -26,6 +26,17 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Setup Android SDK and accept licenses
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: 'true'
+          log-accepted-android-sdk-licenses: 'false'
+
+      - name: Install Android build tools
+        run: |
+          sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;37.0.0"
+
       - name: Install system packages
         run: |
           sudo apt-get update
@@ -62,5 +73,6 @@ jobs:
             bin/*.apk
             buildozer.log
           if-no-files-found: warn
+
 
 
