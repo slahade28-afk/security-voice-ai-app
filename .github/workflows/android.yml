@@ -41,11 +41,18 @@ jobs:
 
       - name: Install Android platforms and build tools
         run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;37.0.0"
-          ls "$ANDROID_HOME/build-tools/37.0.0"
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;37.0.
 
       - name: Install system packages
+        run: |    - name: Install Android platforms and build tools
+        shell: bash
         run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;37.0.0"
+          mkdir -p "$ANDROID_HOME/licenses"
+          mkdir -p "$HOME/.buildozer/android/platform/android-sdk"
+          cp -r "$ANDROID_HOME/licenses/." "$HOME/.buildozer/android/platform/android-sdk/licenses/"
+          ls "$ANDROID_HOME/build-tools/37.0.0"
           sudo apt-get update
           sudo apt-get install -y \
             git zip unzip \
