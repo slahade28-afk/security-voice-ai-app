@@ -1,170 +1,125 @@
 
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
-from kivy.core.window import Window
-from kivy.utils import platform
+from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
+
 
 class SecurityAssistantApp(App):
+
     def build(self):
         self.title = "Security Voice Command AI"
-        Window.clearcolor = (0.06, 0.09, 0.15, 1)
+        Window.clearcolor = (0.04, 0.07, 0.12, 1)
 
-        layout = BoxLayout(
+        root = BoxLayout(
             orientation="vertical",
-            padding=20,
-            spacing=15
+            padding=16,
+            spacing=12
         )
 
-        layout.add_widget(Label(
-            text="SECURITY AI ASSISTANT",
+        title = Label(
+            text="[b]SECURITY AI ASSISTANT[/b]",
+            markup=True,
             font_size="22sp",
             size_hint_y=None,
-            height=60
-        ))
+            height=65
+        )
+        root.add_widget(title)
+
+        subtitle = Label(
+            text="Your Personal Security Helper",
+            font_size="14sp",
+            size_hint_y=None,
+            height=35
+        )
+        root.add_widget(subtitle)
 
         self.output = Label(
-            text="Namaskar! Mi tumcha Security Assistant aahe."
+            text="Namaskar! Mi tumcha Security Assistant aahe.",
+            font_size="17sp",
+            halign="center",
+            valign="middle",
+            size_hint_y=None,
+            height=120
         )
-        layout.add_widget(self.output)
+        self.output.bind(
+            size=lambda instance, value:
+            setattr(instance, "text_size", value)
+        )
+        root.add_widget(self.output)
 
-        self.command_input = TextInput(
-            hint_text="Command type kara...",
+        self.command = TextInput(
+            hint_text="Command liha...",
             multiline=False,
             size_hint_y=None,
-            height=55
+            height=52
         )
-        layout.add_widget(self.command_input)
+        root.add_widget(self.command)
 
-        layout.add_widget(self.make_button(
-            "Run Command", self.run_command
-        ))
-        layout.add_widget(self.make_button(
-            "Voice Command 🎤", self.listen
-        ))
-        layout.add_widget(self.make_button(
-            "Help", self.show_help
-        ))
-
-        if platform == "android":
-            try:
-                from android import activity
-                activity.bind(
-                    on_activity_result=self.on_activity_result
-                )
-            except Exception:
-                pass
-
-        return layout
-
-    def make_button(self, title, callback):
-        button = Button(
-            text=title,
+        run_button = Button(
+            text="RUN COMMAND",
             size_hint_y=None,
             height=55
         )
-        button.bind(on_press=callback)
-        return button
+        run_button.bind(on_press=self.run_command)
+        root.add_widget(run_button)
 
-    def listen(self, instance):
-        if platform != "android":
-            self.output.text = "Voice command Android var vapra."
-            return
+        help_button = Button(
+            text="HELP",
+            size_hint_y=None,
+            height=48
+        )
+        help_button.bind(on_press=self.show_help)
+        root.add_widget(help_button)
 
-        try:
-            from jnius import autoclass
+        footer = Label(
+            text="Stay Safe • Protect Your Privacy",
+            font_size="12sp",
+            size_hint_y=None,
+            height=35
+        )
+        root.add_widget(footer)
 
-            PythonActivity = autoclass(
-                "org.kivy.android.PythonActivity"
-            )
-            Intent = autoclass("android.content.Intent")
-
-            intent = Intent(
-                "android.speech.action.RECOGNIZE_SPEECH"
-            )
-            intent.putExtra(
-                "android.speech.extra.LANGUAGE_MODEL",
-                "free_form"
-            )
-            intent.putExtra(
-                "android.speech.extra.LANGUAGE",
-                "mr-IN"
-            )
-            intent.putExtra(
-                "android.speech.extra.PROMPT",
-                "Tumchi command bola"
-            )
-
-            self.request_code = 731
-            PythonActivity.mActivity.startActivityForResult(
-                intent, self.request_code
-            )
-            self.output.text = "Aiktoy... Krupaya bola."
-
-        except Exception as error:
-            self.output.text = "Voice suru zala nahi: " + str(error)
-
-    def on_activity_result(
-        self, request_code, result_code, intent
-    ):
-        if request_code != 731 or intent is None:
-            return
-
-        try:
-            from jnius import autoclass
-
-            Activity = autoclass("android.app.Activity")
-            if result_code != Activity.RESULT_OK:
-                self.output.text = "Voice command radd zala."
-                return
-
-            results = intent.getStringArrayListExtra(
-                "android.speech.extra.RESULTS"
-            )
-
-            if results and results.size() > 0:
-                command = str(results.get(0))
-                self.command_input.text = command
-                self.process_command(command)
-
-        except Exception:
-            self.output.text = "Voice result vachata ala nahi."
+        return root
 
     def run_command(self, instance):
-        self.process_command(self.command_input.text)
-
-    def process_command(self, text):
-        command = text.strip().lower()
+        command = self.command.text.lower().strip()
 
         if command in ("hello", "hi", "namaskar"):
-            response = "Namaskar! Mi tumchi madat karayla tayar aahe."
-        elif command in ("help", "madat"):
-            response = "Commands: hello, status, security, help"
-        elif command in ("status", "stithi"):
-            response = "Security Assistant chalu aahe."
-        elif command in ("security", "suraksha"):
-            response = "Anolakhi links ughadu naka. OTP ani password konalahi sangu naka."
+            self.output.text = (
+                "Namaskar! Mi tumchi madat karayla tayar aahe."
+            )
+
+        elif command == "status":
+            self.output.text = "Security Assistant chalu aahe."
+
+        elif command == "security":
+            self.output.text = (
+                "Security Tip: OTP ani password konalahi sangu naka."
+            )
+
+        elif command == "help":
+            self.show_help(instance)
+
         else:
-            response = "Command samajli nahi. Help vaprun paha."
-
-        self.output.text = response
-        self.speak(response)
-
-    def speak(self, message):
-        if platform == "android":
-            try:
-                from plyer import tts
-                tts.speak(message)
-            except Exception:
-                self.output.text = message + " (Voice reply suru zala nahi.)"
+            self.output.text = (
+                "Command samajla nahi. HELP button daba."
+            )
 
     def show_help(self, instance):
-        message = "Try kara: hello, status, security, help"
-        self.output.text = message
-        self.speak(message)
+        self.output.text = (
+            "Available Commands:\n"
+            "hello - Greeting\n"
+            "status - App status\n"
+            "security - Security tip\n"
+            "help - Commands list"
+        )
+
 
 if __name__ == "__main__":
     SecurityAssistantApp().run()
++0
 
