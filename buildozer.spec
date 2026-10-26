@@ -1,4 +1,4 @@
-[app]
+[app]android.accept_sdk_license = True
 title = Security Voice Command AI
 package.name = securityassistant
 package.domain = org.securityai
