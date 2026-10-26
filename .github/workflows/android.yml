@@ -38,5 +38,4 @@ jobs:
         with:
           name: security-assistant-apk
           path: bin/*.apk
-+0
 
