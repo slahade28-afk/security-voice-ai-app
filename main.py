@@ -1,171 +1,190 @@
 
 from kivy.app import App
-from kivy.core.window import Window
-from kivy.core.text import LabelBase
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.uix.scrollview import ScrollView
-from kivy.metrics import dp
-import os
-
-FONT_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "NotoSansDevanagari.ttf"
-)
-
-if os.path.exists(FONT_PATH):
-    LabelBase.register(
-        name="MarathiFont",
-        fn_regular=FONT_PATH
-    )
-    FONT = "MarathiFont"
-else:
-    FONT = "Roboto"
+from kivy.uix.button import Button
+from kivy.core.window import Window
+from kivy.clock import Clock
 
 
 class SecurityAssistantApp(App):
 
     def build(self):
         self.title = "Security Assistant"
-        Window.clearcolor = (0.08, 0.10, 0.15, 1)
+        Window.clearcolor = (0.06, 0.09, 0.15, 1)
 
-        scroll = ScrollView(
-            do_scroll_x=False,
-            do_scroll_y=True
-        )
-
-        root = BoxLayout(
+        layout = BoxLayout(
             orientation="vertical",
-            padding=dp(15),
-            spacing=dp(12),
-            size_hint_y=None
+            padding=20,
+            spacing=12
         )
-        root.bind(minimum_height=root.setter("height"))
 
-        title = Label(
-            text="[b]🛡️ सुरक्षा सहाय्यक[/b]",
-            markup=True,
-            font_name=FONT,
-            font_size="26sp",
+        layout.add_widget(Label(
+            text="Security Assistant",
+            font_size="24sp",
             size_hint_y=None,
-            height=dp(65)
-        )
-        root.add_widget(title)
+            height=60
+        ))
 
-        subtitle = Label(
+        self.output = Label(
             text="नमस्कार! मी तुमचा Security Assistant आहे.",
-            font_name=FONT,
-            font_size="17sp",
-            size_hint_y=None,
-            height=dp(60)
+            font_size="18sp"
         )
-        root.add_widget(subtitle)
+        layout.add_widget(self.output)
 
-        self.output = TextInput(
-            text="येथे उत्तर दिसेल.",
-            font_name=FONT,
-            readonly=True,
-            multiline=True,
-            font_size="17sp",
-            size_hint_y=None,
-            height=dp(180),
-            background_color=(0.14, 0.17, 0.23, 1),
-            foreground_color=(1, 1, 1, 1)
-        )
-        root.add_widget(self.output)
-
-        self.command = TextInput(
-            hint_text="इथे कमांड लिहा...",
-            font_name=FONT,
+        self.command_input = TextInput(
+            hint_text="कमांड लिहा...",
             multiline=False,
-            font_size="18sp",
             size_hint_y=None,
-            height=dp(55)
+            height=55
         )
-        self.command.bind(
-            on_text_validate=self.run_command
-        )
-        root.add_widget(self.command)
+        layout.add_widget(self.command_input)
 
         run_button = Button(
             text="कमांड चालवा",
-            font_name=FONT,
-            font_size="18sp",
             size_hint_y=None,
-            height=dp(55)
+            height=55
         )
         run_button.bind(on_press=self.run_command)
-        root.add_widget(run_button)
+        layout.add_widget(run_button)
+
+        mic_button = Button(
+            text="Mic - आवाजाने बोला",
+            size_hint_y=None,
+            height=55
+        )
+        mic_button.bind(on_press=self.listen)
+        layout.add_widget(mic_button)
 
         help_button = Button(
             text="मदत",
-            font_name=FONT,
-            font_size="18sp",
             size_hint_y=None,
-            height=dp(55)
+            height=50
         )
         help_button.bind(on_press=self.show_help)
-        root.add_widget(help_button)
+        layout.add_widget(help_button)
 
-        footer = Label(
-            text="सुरक्षित रहा • विचारपूर्वक इंटरनेट वापरा",
-            font_name=FONT,
-            font_size="13sp",
-            size_hint_y=None,
-            height=dp(45)
-        )
-        root.add_widget(footer)
-
-        scroll.add_widget(root)
-        return scroll
+        return layout
 
     def run_command(self, instance):
-        command = self.command.text.strip().lower()
+        command = self.command_input.text.strip().lower()
 
         if command in ("hello", "hi", "namaskar", "नमस्कार"):
-            self.output.text = (
-                "नमस्कार! मी तुमचा Security Assistant आहे."
+            response = "नमस्कार! मी तुमची मदत करायला तयार आहे."
+
+        elif command in ("status", "stithi", "स्थिती"):
+            response = "Security Assistant सुरू आहे."
+
+        elif command in ("security", "suraksha", "सुरक्षा"):
+            response = (
+                "सुरक्षा सूचना: अनोळखी लिंक उघडू नका. "
+                "OTP आणि पासवर्ड कोणालाही सांगू नका."
             )
 
-        elif command in ("status", "स्थिती"):
-            self.output.text = "ॲप व्यवस्थित सुरू आहे."
-
-        elif command in ("security", "सुरक्षा"):
-            self.output.text = (
-                "सुरक्षा सूचना:\n"
-                "1. मजबूत पासवर्ड वापरा.\n"
-                "2. OTP कोणालाही सांगू नका.\n"
-                "3. अनोळखी लिंक उघडू नका.\n"
-                "4. ॲप्स विश्वसनीय ठिकाणाहूनच इन्स्टॉल करा."
-            )
-
-        elif command in ("help", "मदत"):
-            self.show_help(instance)
-            self.command.text = ""
-            return
-
-        elif command == "":
-            self.output.text = "कृपया आधी कमांड लिहा."
+        elif command in ("help", "madat", "मदत"):
+            response = "hello, status, security, help या कमांड वापरा."
 
         else:
-            self.output.text = (
-                "ही कमांड समजली नाही.\n"
-                "मदत बटण दाबा किंवा help लिहा."
+            response = "कमांड समजली नाही. मदत बटण दाबा."
+
+        self.output.text = response
+        self.command_input.text = ""
+
+    def listen(self, instance):
+        try:
+            from android.permissions import (
+                request_permissions, Permission
             )
 
-        self.command.text = ""
+            self.output.text = "मायक्रोफोनची परवानगी तपासत आहे..."
+
+            request_permissions(
+                [Permission.RECORD_AUDIO],
+                self.on_permission_result
+            )
+
+        except Exception as error:
+            self.output.text = "आवाज सुविधा उपलब्ध नाही."
+            print(error)
+
+    def on_permission_result(self, permissions, grants):
+        if not grants or not grants[0]:
+            self.output.text = "मायक्रोफोनची परवानगी द्या."
+            return
+
+        Clock.schedule_once(self.start_speech, 0.5)
+
+    def start_speech(self, dt):
+        try:
+            from jnius import autoclass, PythonJavaClass, java_method
+
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+            Intent = autoclass("android.content.Intent")
+            RecognizerIntent = autoclass(
+                "android.speech.RecognizerIntent"
+            )
+
+            class ResultListener(PythonJavaClass):
+                __javainterfaces__ = [
+                    "org/kivy/android/PythonActivity$ActivityResultListener"
+                ]
+                __javacontext__ = "app"
+
+                @java_method("(IILandroid/content/Intent;)V")
+                def onActivityResult(
+                    listener_self, request_code, result_code, data
+                ):
+                    if request_code == 734 and result_code == -1:
+                        if data is not None:
+                            results = data.getStringArrayListExtra(
+                                RecognizerIntent.EXTRA_RESULTS
+                            )
+                            if results is not None and results.size() > 0:
+                                spoken = str(results.get(0))
+                                Clock.schedule_once(
+                                    lambda dt: self.use_voice(spoken), 0
+                                )
+
+            if not hasattr(self, "voice_listener"):
+                self.voice_listener = ResultListener()
+                PythonActivity.mActivityResultListeners.add(
+                    self.voice_listener
+                )
+
+            intent = Intent(
+                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+            )
+            intent.putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            intent.putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE, "mr-IN"
+            )
+            intent.putExtra(
+                RecognizerIntent.EXTRA_PROMPT,
+                "तुमची कमांड बोला"
+            )
+
+            activity = PythonActivity.mActivity
+            activity.startActivityForResult(intent, 734)
+            self.output.text = "आवाज ऐकण्यासाठी बोला..."
+
+        except Exception as error:
+            self.output.text = "आवाज सुरू झाला नाही. Build तपासा."
+            print(error)
+
+    def use_voice(self, spoken):
+        self.command_input.text = spoken
+        self.run_command(None)
 
     def show_help(self, instance):
         self.output.text = (
-            "उपलब्ध कमांड:\n\n"
-            "hello - नमस्कार\n"
-            "status - ॲपची स्थिती\n"
-            "security - सुरक्षा सूचना\n"
-            "help - मदत\n\n"
-            "कमांड बॉक्समध्ये कमांड लिहा "
-            "आणि 'कमांड चालवा' दाबा."
+            "कमांड: hello, status, security, help. "
+            "Mic बटणाने बोलूनही कमांड देऊ शकता."
         )
 
 
