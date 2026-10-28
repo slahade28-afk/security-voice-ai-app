@@ -73,6 +73,11 @@ class SecurityAssistantApp(App):
         root.add_widget(scroll)
 
         self.show_dashboard()
+        try:
+            from android import activity
+            activity.bind(on_activity_result=self.on_activity_result)
+        except Exception:
+            pass
         return root
 
     def label(self, text, size=15, color=WHITE, height=45):
@@ -107,7 +112,7 @@ class SecurityAssistantApp(App):
         if subtitle:
             self.page.add_widget(self.label(subtitle, 14, MUTED, 50))
         self.page.add_widget(
-            self.button("⌂ मुख्य Dashboard", self.show_dashboard)
+            self.button("⌂ Main Dashboard", self.show_dashboard)
         )
 
     def message(self, title, message):
@@ -117,7 +122,7 @@ class SecurityAssistantApp(App):
             spacing=dp(10)
         )
         content.add_widget(self.label(message, 14, WHITE, 130))
-        close = Button(text="ठीक आहे", size_hint_y=None, height=dp(45))
+        close = Button(text="OK", size_hint_y=None, height=dp(45))
         content.add_widget(close)
 
         popup = Popup(
@@ -154,7 +159,7 @@ class SecurityAssistantApp(App):
             self.label("🛡️ SECURITY ASSISTANT", 23, GREEN, 58)
         )
         self.page.add_widget(
-            self.label("तुमच्या मोबाइलची सुरक्षा", 17, WHITE, 42)
+            self.label("Mobile Security", 17, WHITE, 42)
         )
         self.page.add_widget(
             self.label("✓ MOBILE PROTECTION", 20, GREEN, 60)
@@ -173,7 +178,7 @@ class SecurityAssistantApp(App):
             self.page.add_widget(self.button(title, callback, 56))
 
         self.page.add_widget(
-            self.label("सुरक्षित रहा • संशयास्पद लिंक टाळा",
+            self.label("Stay Safe • Avoid Suspicious Links",
                        12, MUTED, 45)
         )
 
@@ -189,22 +194,22 @@ class SecurityAssistantApp(App):
         return kdf.derive(pin.encode("utf-8"))
 
     def vault(self):
-        self.reset_page("🔐 SECURE VAULT", "PIN वापरून Vault उघडा")
+        self.reset_page("🔐 SECURE VAULT", "Unlock the Vault with your PIN")
 
         if not os.path.exists(self.pin_file):
             self.page.add_widget(
-                self.label("नवीन किमान 6 अंकांचा PIN तयार करा.", 14)
+                self.label("Create a new PIN with at least 6 digits.", 14)
             )
 
             pin = TextInput(
-                hint_text="नवीन PIN",
+                hint_text="New PIN",
                 password=True,
                 multiline=False,
                 size_hint_y=None,
                 height=dp(48)
             )
             confirm = TextInput(
-                hint_text="PIN पुन्हा टाका",
+                hint_text="Confirm PIN",
                 password=True,
                 multiline=False,
                 size_hint_y=None,
@@ -215,10 +220,10 @@ class SecurityAssistantApp(App):
 
             def create_pin():
                 if not pin.text.isdigit() or len(pin.text) < 6:
-                    self.message("PIN", "किमान 6 अंकांचा PIN वापरा.")
+                    self.message("PIN", "Use a PIN with at least 6 digits.")
                     return
                 if pin.text != confirm.text:
-                    self.message("PIN", "दोन्ही PIN जुळत नाहीत.")
+                    self.message("PIN", "The PINs do not match.")
                     return
 
                 salt = secrets.token_bytes(16)
@@ -234,11 +239,11 @@ class SecurityAssistantApp(App):
                     }, f)
 
                 self.vault_pin = pin.text
-                self.log("Vault PIN", "PIN तयार केला")
+                self.log("Vault PIN", "PIN created")
                 self.vault_files()
 
             self.page.add_widget(
-                self.button("PIN तयार करा", create_pin)
+                self.button("Create PIN", create_pin)
             )
             return
 
@@ -265,9 +270,9 @@ class SecurityAssistantApp(App):
                     self.vault_pin = pin.text
                     self.vault_files()
                 else:
-                    self.message("Vault", "PIN चुकीचा आहे.")
+                    self.message("Vault", "Incorrect PIN.")
             except Exception:
-                self.message("Vault", "PIN माहिती वाचता आली नाही.")
+                self.message("Vault", "Could not read PIN information.")
 
         self.page.add_widget(self.button("Unlock Vault", unlock))
 
@@ -311,12 +316,12 @@ class SecurityAssistantApp(App):
         try:
             size = os.path.getsize(encrypted_path)
             if size < 48:
-                raise ValueError("Vault फाइल अपूर्ण आहे.")
+                raise ValueError("Vault file is incomplete.")
 
             with open(encrypted_path, "rb") as src:
                 header = src.read(32)
                 if len(header) != 32 or header[:4] != b"SAV1":
-                    raise ValueError("फाइलचा format चुकीचा आहे.")
+                    raise ValueError("Invalid file format.")
 
                 salt, nonce = header[4:20], header[20:32]
                 key = self.derive_key(pin, salt)
@@ -337,7 +342,7 @@ class SecurityAssistantApp(App):
                     while remaining:
                         chunk = src.read(min(1024 * 1024, remaining))
                         if not chunk:
-                            raise ValueError("फाइल अपूर्ण आहे.")
+                            raise ValueError("File is incomplete.")
                         tmp.write(decryptor.update(chunk))
                         remaining -= len(chunk)
 
@@ -346,16 +351,16 @@ class SecurityAssistantApp(App):
             with open(temp_path, "rb") as tmp:
                 raw = tmp.read(4)
                 if len(raw) != 4:
-                    raise ValueError("फाइलची माहिती चुकीची आहे.")
+                    raise ValueError("Invalid file information.")
 
                 n = struct.unpack(">I", raw)[0]
                 if n < 1 or n > 4096:
-                    raise ValueError("फाइलचे नाव चुकीचे आहे.")
+                    raise ValueError("Invalid file name.")
 
                 name = tmp.read(n).decode("utf-8")
                 name = os.path.basename(name.replace("\\", "/"))
                 if not name:
-                    raise ValueError("फाइलचे नाव रिकामे आहे.")
+                    raise ValueError("File name is empty.")
 
                 out = os.path.join(output_dir, name)
                 if os.path.exists(out):
@@ -385,12 +390,12 @@ class SecurityAssistantApp(App):
     def vault_files(self):
         self.reset_page(
             "🔐 ENCRYPTED VAULT",
-            "AES-256-GCM एन्क्रिप्शन"
+            "AES-256-GCM encryption"
         )
         self.page.add_widget(
             self.label(
-                "मूळ फाइल डिलीट होत नाही. Restore चाचणी होईपर्यंत "
-                "मूळ फाइल सुरक्षित ठेवा.",
+                "The original file is not deleted. Keep it safe until you test Restore. "
+                "Keep the original file safe.",
                 13, MUTED, 75
             )
         )
@@ -399,7 +404,7 @@ class SecurityAssistantApp(App):
             from plyer import filechooser
 
             self.page.add_widget(self.button(
-                "＋ फाइल निवडा आणि Encrypt करा",
+                "＋ Select a File and Encrypt",
                 lambda: filechooser.open_file(
                     on_selection=self.copy_selected
                 ),
@@ -413,7 +418,7 @@ class SecurityAssistantApp(App):
 
             if not files:
                 self.page.add_widget(
-                    self.label("अजून फाइल नाही.", 14)
+                    self.label("No files yet.", 14)
                 )
 
             for name in files:
@@ -426,7 +431,7 @@ class SecurityAssistantApp(App):
 
         except Exception as exc:
             self.page.add_widget(
-                self.label("File chooser उपलब्ध नाही: " + str(exc),
+                self.label("File chooser unavailable: " + str(exc),
                            12, MUTED, 70)
             )
 
@@ -436,7 +441,7 @@ class SecurityAssistantApp(App):
         try:
             source = selection[0]
             if not os.path.isfile(source):
-                raise ValueError("फाइल उपलब्ध नाही.")
+                raise ValueError("File not found.")
 
             name = secrets.token_hex(16) + ".sav"
             destination = os.path.join(self.vault_dir, name)
@@ -444,57 +449,120 @@ class SecurityAssistantApp(App):
 
             self.log("Vault Encrypt", os.path.basename(source))
             self.message(
-                "Encryption यशस्वी",
-                "फाइल एन्क्रिप्ट झाली. मूळ फाइल डिलीट केलेली नाही."
+                "Encryption Successful",
+                "File encrypted. The original file was not deleted."
             )
             self.vault_files()
         except Exception as exc:
-            self.message("Encryption त्रुटी", str(exc))
+            self.message("Encryption Error", str(exc))
 
     def restore_file(self, name):
         try:
-            from plyer import filechooser
-            path = os.path.join(self.vault_dir, name)
-            filechooser.choose_dir(
-                on_selection=lambda selection: self.restore_selected(
-                    path, selection
-                )
-            )
-        except Exception as exc:
-            self.message("Restore", str(exc))
+            from jnius import autoclass
 
-    def restore_selected(self, encrypted_path, selection):
-        if not selection:
-            return
-        try:
-            output = self.decrypt_file(
-                encrypted_path, selection[0], self.vault_pin
-            )
-            self.log("Vault Restore", os.path.basename(output))
-            self.message("Restore यशस्वी", "फाइल परत मिळाली.")
+            encrypted_path = os.path.join(self.vault_dir, name)
+
+            # Decrypt and verify the encrypted file before saving.
+            temp_dir = tempfile.mkdtemp(dir=self.base)
+            try:
+                restored_path = self.decrypt_file(
+                    encrypted_path, temp_dir, self.vault_pin
+                )
+                self._restore_temp_path = restored_path
+                self._restore_temp_dir = temp_dir
+
+                Intent = autoclass("android.content.Intent")
+                PythonActivity = autoclass(
+                    "org.kivy.android.PythonActivity"
+                )
+                activity = PythonActivity.mActivity
+
+                intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.setType("*/*")
+                intent.putExtra(
+                    Intent.EXTRA_TITLE,
+                    os.path.basename(restored_path)
+                )
+                self._restore_activity = activity
+                self._restore_request_code = 7412
+                activity.startActivityForResult(intent, 7412)
+                self.message(
+                    "Save Restored File",
+                    "Choose Downloads or another folder in the Android save window."
+                )
+            except Exception:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                raise
         except Exception as exc:
-            self.message("Restore अयशस्वी", str(exc))
+            self.message("Restore Failed", str(exc))
+
+    def on_activity_result(self, request_code, result_code, intent):
+        try:
+            if request_code != 7412:
+                return
+            if not hasattr(self, "_restore_temp_path"):
+                return
+
+            RESULT_OK = -1
+            if result_code != RESULT_OK or intent is None:
+                self.message("Restore Cancelled", "No file was saved.")
+                return
+
+            uri = intent.getData()
+            if uri is None:
+                raise ValueError("No save location was selected.")
+
+            resolver = self._restore_activity.getContentResolver()
+            stream = resolver.openOutputStream(uri)
+            if stream is None:
+                raise ValueError("Could not open the selected save location.")
+            try:
+                with open(self._restore_temp_path, "rb") as src:
+                    while True:
+                        chunk = src.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        stream.write(bytearray(chunk))
+            finally:
+                stream.close()
+
+            self.log(
+                "Vault Restore",
+                os.path.basename(self._restore_temp_path)
+            )
+            self.message("Restore Successful", "File saved successfully.")
+        except Exception as exc:
+            self.message("Restore Failed", str(exc))
+        finally:
+            temp_dir = getattr(self, "_restore_temp_dir", None)
+            if temp_dir:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            for attr in ("_restore_temp_path", "_restore_temp_dir",
+                         "_restore_activity", "_restore_request_code"):
+                if hasattr(self, attr):
+                    delattr(self, attr)
 
     # App permissions guidance
 
     def permissions(self):
         self.reset_page("📱 APP PERMISSIONS")
         self.page.add_widget(self.label(
-            "Android Settings मध्ये Camera, Microphone, "
-            "Location आणि Photos परवानग्या तपासा.",
+            "Check Camera, Microphone, "
+            "Location, and Photos permissions in Android Settings.",
             14, WHITE, 100
         ))
         self.page.add_widget(self.button(
-            "App Settings उघडा", self.open_app_settings
+            "Open App Settings", self.open_app_settings
         ))
         self.page.add_widget(self.button(
-            "Privacy Dashboard सूचना",
+            "Privacy Dashboard Guide",
             lambda: self.message(
                 "Privacy",
-                "Settings → Security & privacy → Privacy dashboard उघडा."
+                "Open Settings → Security & privacy → Privacy dashboard."
             )
         ))
-        self.log("Permissions", "सूचना पाहिल्या")
+        self.log("Permissions", "Viewed tips")
 
     def open_app_settings(self):
         try:
@@ -512,7 +580,7 @@ class SecurityAssistantApp(App):
         except Exception:
             self.message(
                 "Settings",
-                "Android Settings → Apps → Security Assistant उघडा."
+                "Open Android Settings → Apps → Security Assistant."
             )
 
     # Wi-Fi Security
@@ -520,17 +588,17 @@ class SecurityAssistantApp(App):
     def wifi_security(self):
         self.reset_page("📶 WI-FI SECURITY")
         tips = [
-            "• अनोळखी Wi-Fi वर बँक व्यवहार टाळा.",
-            "• राउटरला मजबूत पासवर्ड द्या.",
-            "• WPA2 किंवा WPA3 वापरा.",
-            "• अनोळखी नेटवर्कसाठी Auto-connect बंद ठेवा.",
-            "• सार्वजनिक Wi-Fi वर संवेदनशील माहिती पाठवताना काळजी घ्या."
+            "• Avoid banking on unfamiliar Wi-Fi.",
+            "• Use a strong router password.",
+            "• Use WPA2 or WPA3.",
+            "• Disable auto-connect for unknown networks.",
+            "• Be careful sending sensitive data over public Wi-Fi."
         ]
         for tip in tips:
             self.page.add_widget(self.label(tip, 14, WHITE, 55))
         self.page.add_widget(self.button(
-            "नोंद करा",
-            lambda: self.log("Wi-Fi", "सूचना पाहिल्या")
+            "Log Activity",
+            lambda: self.log("Wi-Fi", "Viewed tips")
         ))
 
     # Fake Link Checker
@@ -538,7 +606,7 @@ class SecurityAssistantApp(App):
     def link_checker(self):
         self.reset_page("🔗 FAKE LINK CHECKER")
         self.page.add_widget(
-            self.label("लिंक तपासण्यासाठी खाली पेस्ट करा.", 14)
+            self.label("Paste a link below to check it.", 14)
         )
         entry = TextInput(
             hint_text="https://example.com",
@@ -546,7 +614,7 @@ class SecurityAssistantApp(App):
             size_hint_y=None,
             height=dp(50)
         )
-        result = self.label("निकाल येथे दिसेल.", 13, WHITE, 110)
+        result = self.label("Results will appear here.", 13, WHITE, 110)
         self.page.add_widget(entry)
         self.page.add_widget(result)
 
@@ -554,32 +622,32 @@ class SecurityAssistantApp(App):
             url = entry.text.strip()
             issues = []
             if not url:
-                result.text = "कृपया लिंक टाका."
+                result.text = "Please enter a link."
                 return
             if not re.match(r"^https?://", url, re.I):
-                issues.append("http:// किंवा https:// नाही")
+                issues.append("Missing http:// or https://")
             if "@" in url:
-                issues.append("@ चिन्ह आहे")
+                issues.append("Contains an @ symbol")
             if re.search(
                 r"(login|verify|gift|free-prize|password)", url, re.I
             ):
-                issues.append("संशयास्पद शब्द आहेत")
+                issues.append("Contains suspicious words")
             if re.match(
                 r"^https?://\d{1,3}(?:\.\d{1,3}){3}", url, re.I
             ):
-                issues.append("IP पत्त्यावर थेट लिंक आहे")
+                issues.append("Direct link uses an IP address")
 
             if issues:
-                result.text = "⚠️ सावध राहा:\n" + "\n".join(issues)
-                self.log("Link Checker", "संशयाची चिन्हे")
+                result.text = "⚠️ Be Careful:\n" + "\n".join(issues)
+                self.log("Link Checker", "Suspicious indicators found")
             else:
                 result.text = (
-                    "स्पष्ट संशयाची चिन्हे सापडली नाहीत. "
-                    "याचा अर्थ लिंक सुरक्षित आहे असे नाही."
+                    "No obvious warning signs were found. "
+                    "This does not mean the link is safe."
                 )
-                self.log("Link Checker", "प्राथमिक तपासणी पूर्ण")
+                self.log("Link Checker", "Initial check completed")
 
-        self.page.add_widget(self.button("लिंक तपासा", check))
+        self.page.add_widget(self.button("Check Link", check))
 
     # Activity Log
 
@@ -592,7 +660,7 @@ class SecurityAssistantApp(App):
             entries = []
 
         if not entries:
-            self.page.add_widget(self.label("अजून नोंद नाही.", 14))
+            self.page.add_widget(self.label("No activity recorded yet.", 14))
 
         for item in reversed(entries[-50:]):
             self.page.add_widget(self.label(
@@ -607,16 +675,16 @@ class SecurityAssistantApp(App):
     def mobile_protection(self):
         self.reset_page("🛡️ MOBILE PROTECTION")
         tips = [
-            "✓ Android अपडेट्स तपासा.",
-            "✓ Google Play Protect सुरू ठेवा.",
-            "✓ स्क्रीन लॉक आणि मजबूत PIN वापरा.",
-            "✓ अनोळखी APK इन्स्टॉल करू नका.",
-            "✓ महत्त्वाच्या फाइल्सचा बॅकअप घ्या.",
-            "✓ अनावश्यक App permissions बंद करा."
+            "✓ Check for Android updates.",
+            "✓ Keep Google Play Protect enabled.",
+            "✓ Use a screen lock and a strong PIN.",
+            "✓ Do not install unknown APKs.",
+            "✓ Back up important files.",
+            "✓ Disable unnecessary app permissions."
         ]
         for tip in tips:
             self.page.add_widget(self.label(tip, 14, WHITE, 50))
-        self.log("Mobile Protection", "सूचना पाहिल्या")
+        self.log("Mobile Protection", "Viewed tips")
 
 
 if __name__ == "__main__":
