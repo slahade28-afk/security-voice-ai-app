@@ -1,3 +1,5 @@
+import os
+import socket
 
 from kivy.app import App
 from kivy.core.window import Window
@@ -9,19 +11,31 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
-import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_PATH = os.path.join(BASE_DIR, "NotoSansDevanagari.ttf")
+try:
+    from plyer import battery
+except Exception:
+    battery = None
 
+
+# मराठी फॉन्ट
 FONT = "Roboto"
 
-if os.path.exists(FONT_PATH):
-    LabelBase.register(
-        name="MarathiFont",
-        fn_regular=FONT_PATH
-    )
-    FONT = "MarathiFont"
+font_path = os.path.join(
+    os.path.dirname(__file__),
+    "NotoSansDevanagari.ttf"
+)
+
+if os.path.exists(font_path):
+    try:
+        LabelBase.register(
+            name="MarathiFont",
+            fn_regular=font_path
+        )
+        FONT = "MarathiFont"
+    except Exception:
+        pass
+
 
 Window.clearcolor = (0.055, 0.075, 0.12, 1)
 
@@ -33,37 +47,32 @@ class SecurityAssistantApp(App):
 
         root = BoxLayout(
             orientation="vertical",
-            padding=dp(14),
-            spacing=dp(12)
+            padding=dp(12),
+            spacing=dp(10)
         )
 
         scroll = ScrollView(
-            do_scroll_x=False,
-            bar_width=dp(4)
+            do_scroll_x=False
         )
 
         page = BoxLayout(
             orientation="vertical",
             spacing=dp(12),
             size_hint_y=None,
-            padding=(0, dp(8), 0, dp(12))
+            padding=[dp(4), dp(8)]
         )
-        page.bind(minimum_height=page.setter("height"))
+        page.bind(
+            minimum_height=page.setter("height")
+        )
 
         title = Label(
-            text="सुरक्षा सहाय्यक",
+            text="🛡️ सुरक्षा सहाय्यक",
             font_name=FONT,
-            font_size=dp(25),
+            font_size=dp(27),
             bold=True,
-            color=(0.35, 0.85, 1, 1),
+            color=(0.25, 0.75, 1, 1),
             size_hint_y=None,
-            height=dp(52),
-            halign="center",
-            valign="middle"
-        )
-        title.bind(
-            size=lambda obj, val:
-            setattr(obj, "text_size", val)
+            height=dp(55)
         )
         page.add_widget(title)
 
@@ -73,13 +82,7 @@ class SecurityAssistantApp(App):
             font_size=dp(15),
             color=(0.85, 0.9, 1, 1),
             size_hint_y=None,
-            height=dp(35),
-            halign="center",
-            valign="middle"
-        )
-        subtitle.bind(
-            size=lambda obj, val:
-            setattr(obj, "text_size", val)
+            height=dp(35)
         )
         page.add_widget(subtitle)
 
@@ -87,38 +90,34 @@ class SecurityAssistantApp(App):
             text=(
                 "नमस्कार!\n\n"
                 "मी तुमचा Security Assistant आहे.\n"
-                "खालील बटणे वापरून सुरुवात करा."
+                "खालील Smart Tools वापरून पाहा."
             ),
             font_name=FONT,
             font_size=dp(16),
             color=(1, 1, 1, 1),
             halign="left",
-            valign="top",
+            valign="middle",
             size_hint_y=None,
-            height=dp(180),
-            padding=(dp(14), dp(14))
+            height=dp(175)
         )
         self.output.bind(
-            width=lambda obj, val:
-            setattr(
-                obj,
-                "text_size",
-                (max(0, val - dp(28)), None)
-            )
+            size=lambda obj, val:
+            setattr(obj, "text_size", (val[0] - dp(20), None))
+        )
+        self.output.bind(
+            texture_size=lambda obj, val:
+            setattr(obj, "height", max(dp(175), val[1] + dp(30)))
         )
         page.add_widget(self.output)
 
         self.command = TextInput(
-            hint_text="कमांड येथे लिहा...",
+            hint_text="कमांड लिहा: help, status, security",
             font_name=FONT,
-            font_size=dp(16),
+            font_size=dp(15),
             multiline=False,
             size_hint_y=None,
-            height=dp(52),
-            padding=(dp(12), dp(12)),
-            background_color=(0.93, 0.95, 0.98, 1),
-            foreground_color=(0.08, 0.1, 0.15, 1),
-            cursor_color=(0.1, 0.35, 0.8, 1)
+            height=dp(50),
+            padding=[dp(10), dp(12)]
         )
         self.command.bind(
             on_text_validate=self.run_command
@@ -136,7 +135,7 @@ class SecurityAssistantApp(App):
             cols=2,
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(104)
+            height=dp(260)
         )
 
         grid.add_widget(
@@ -152,6 +151,22 @@ class SecurityAssistantApp(App):
                 "📊 स्थिती",
                 (0.12, 0.38, 0.56, 1),
                 self.show_status
+            )
+        )
+
+        grid.add_widget(
+            self.make_button(
+                "🔋 Battery Info",
+                (0.12, 0.45, 0.30, 1),
+                self.show_battery
+            )
+        )
+
+        grid.add_widget(
+            self.make_button(
+                "🌐 Network Info",
+                (0.05, 0.48, 0.65, 1),
+                self.show_network
             )
         )
 
@@ -215,49 +230,49 @@ class SecurityAssistantApp(App):
         if command in (
             "hello", "hi", "namaskar", "नमस्कार"
         ):
-            message = (
+            self.output.text = (
                 "नमस्कार!\n\n"
                 "मी तुमचा Security Assistant आहे."
             )
 
         elif command in ("status", "स्थिती"):
             self.show_status(instance)
-            self.command.text = ""
-            return
 
-        elif command in (
-            "security", "सुरक्षा"
-        ):
+        elif command in ("security", "सुरक्षा"):
             self.show_security(instance)
-            self.command.text = ""
-            return
+
+        elif command in ("battery", "बॅटरी"):
+            self.show_battery(instance)
+
+        elif command in ("network", "नेटवर्क", "internet"):
+            self.show_network(instance)
 
         elif command in ("help", "मदत"):
             self.show_help(instance)
-            self.command.text = ""
-            return
+
+        elif command in ("voice", "आवाज"):
+            self.show_voice_info(instance)
 
         elif command == "":
-            message = "कृपया आधी कमांड लिहा."
+            self.output.text = "कृपया आधी कमांड लिहा."
 
         else:
-            message = (
+            self.output.text = (
                 "ही कमांड समजली नाही.\n\n"
                 "उपलब्ध कमांड:\n"
-                "hello, status, security, help"
+                "hello, status, security,\n"
+                "battery, network, voice, help"
             )
 
-        self.output.text = message
         self.command.text = ""
 
     def show_status(self, instance):
         self.output.text = (
             "📊 ॲपची स्थिती\n\n"
             "ॲप सुरू आहे.\n"
-            "कमांड सुविधा उपलब्ध आहे.\n"
-            "सुरक्षा सूचना उपलब्ध आहेत.\n\n"
-            "टीप: ही सामान्य ॲप स्थिती आहे; "
-            "फोनचे संपूर्ण सुरक्षा स्कॅन नाही."
+            "Smart Dashboard उपलब्ध आहे.\n"
+            "बॅटरी आणि नेटवर्क टूल्स उपलब्ध आहेत.\n\n"
+            "टीप: हे संपूर्ण फोन सुरक्षा स्कॅन नाही."
         )
 
     def show_security(self, instance):
@@ -268,8 +283,83 @@ class SecurityAssistantApp(App):
             "३. अनोळखी लिंक उघडू नका.\n"
             "४. फोन आणि ॲप्स अपडेट ठेवा.\n"
             "५. दोन-स्तरीय सुरक्षा सुरू करा.\n"
-            "६. संशयास्पद ॲप्स टाळा."
+            "६. संशयास्पद ॲप्स टाळा.\n"
+            "७. महत्त्वाच्या फाइल्सचा बॅकअप ठेवा."
         )
+
+    def show_battery(self, instance):
+        if battery is None:
+            self.output.text = (
+                "🔋 बॅटरीची माहिती मिळत नाही.\n\n"
+                "Plyer उपलब्ध आहे का ते तपासावे."
+            )
+            return
+
+        try:
+            info = battery.status
+
+            if not info:
+                self.output.text = (
+                    "🔋 बॅटरीची माहिती सध्या उपलब्ध नाही."
+                )
+                return
+
+            level = info.get(
+                "percentage",
+                "माहिती उपलब्ध नाही"
+            )
+            charging = info.get("isCharging", False)
+
+            if charging:
+                state = "चार्जिंग सुरू आहे"
+            else:
+                state = "चार्जिंग सुरू नाही"
+
+            if level == "माहिती उपलब्ध नाही":
+                level_text = level
+            else:
+                level_text = f"{level}%"
+
+            self.output.text = (
+                "🔋 Battery Info\n\n"
+                f"बॅटरी: {level_text}\n"
+                f"स्थिती: {state}"
+            )
+
+        except Exception:
+            self.output.text = (
+                "🔋 बॅटरीची माहिती मिळू शकली नाही.\n\n"
+                "Android वर ही सुविधा तपासा."
+            )
+
+    def show_network(self, instance):
+        self.output.text = (
+            "🌐 Network Info\n\n"
+            "इंटरनेट कनेक्शन तपासत आहे..."
+        )
+
+        try:
+            connection = socket.create_connection(
+                ("1.1.1.1", 53),
+                timeout=3
+            )
+            connection.close()
+
+            self.output.text = (
+                "🌐 Network Info\n\n"
+                "इंटरनेट कनेक्शन उपलब्ध दिसत आहे.\n\n"
+                "टीप: हे फक्त प्राथमिक कनेक्शन तपासते.\n"
+                "Wi-Fi पासवर्ड किंवा संपूर्ण नेटवर्क "
+                "सुरक्षा तपासत नाही."
+            )
+
+        except Exception:
+            self.output.text = (
+                "🌐 इंटरनेट कनेक्शन तपासता आले नाही.\n\n"
+                "मोबाइल डेटा किंवा Wi-Fi सुरू आहे का "
+                "ते तपासा.\n"
+                "काही नेटवर्कमध्ये ही चाचणी ब्लॉक असू शकते."
+            )
 
     def show_help(self, instance):
         self.output.text = (
@@ -277,16 +367,18 @@ class SecurityAssistantApp(App):
             "hello - नमस्कार\n"
             "status - ॲपची स्थिती\n"
             "security - सुरक्षा सूचना\n"
+            "battery - बॅटरी माहिती\n"
+            "network - इंटरनेट तपासणी\n"
+            "voice - Voice माहिती\n"
             "help - मदत\n\n"
-            "कमांड बॉक्समध्ये कमांड लिहा "
-            "आणि कमांड चालवा हे बटण दाबा."
+            "कमांड लिहा आणि 'कमांड चालवा' दाबा."
         )
 
     def show_voice_info(self, instance):
         self.output.text = (
             "🎙️ Voice Command\n\n"
-            "आवाजाद्वारे कमांड देण्याची "
-            "सुविधा पुढे जोडता येईल.\n\n"
+            "आवाजाद्वारे कमांड देण्याची सुविधा "
+            "पुढे जोडता येईल.\n\n"
             "सध्या कमांड बॉक्स वापरा."
         )
 
