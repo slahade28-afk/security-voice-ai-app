@@ -1,3 +1,4 @@
+import time
 
 import os
 import re
@@ -54,6 +55,8 @@ class SecurityAssistantApp(App):
         self.pin_file = os.path.join(self.base, "vault_pin.json")
         self.log_file = os.path.join(self.base, "activity.json")
         self.vault_pin = None
+        self.pin_failed_attempts = 0
+        self.pin_lockout_until = 0
 
         root = BoxLayout(
             orientation="vertical",
@@ -257,20 +260,47 @@ class SecurityAssistantApp(App):
         self.page.add_widget(pin)
 
         def unlock():
+            now = time.monotonic()
+            if now < self.pin_lockout_until:
+                remaining = int(self.pin_lockout_until - now) + 1
+                self.message(
+                    "Vault",
+                    f"Too many attempts. Try again in {remaining} seconds."
+                )
+                return
+
             try:
                 with open(self.pin_file, encoding="utf-8") as f:
                     saved = json.load(f)
 
                 digest = hashlib.pbkdf2_hmac(
-                    "sha256", pin.text.encode(),
-                    bytes.fromhex(saved["salt"]), 300000
+                    "sha256",
+                    pin.text.encode(),
+                    bytes.fromhex(saved["salt"]),
+                    300000
                 ).hex()
 
                 if secrets.compare_digest(digest, saved["hash"]):
+                    self.pin_failed_attempts = 0
+                    self.pin_lockout_until = 0
                     self.vault_pin = pin.text
                     self.vault_files()
                 else:
-                    self.message("Vault", "Incorrect PIN.")
+                    self.pin_failed_attempts += 1
+                    remaining = 3 - self.pin_failed_attempts
+
+                    if self.pin_failed_attempts >= 3:
+                        self.pin_failed_attempts = 0
+                        self.pin_lockout_until = time.monotonic() + 30
+                        self.message(
+                            "Vault",
+                            "3 wrong PIN attempts. Vault locked for 30 seconds."
+                        )
+                    else:
+                        self.message(
+                            "Vault",
+                            f"Incorrect PIN. Attempts left: {remaining}"
+                        )
             except Exception:
                 self.message("Vault", "Could not read PIN information.")
 
