@@ -1,7 +1,7 @@
 
 [app]
 icon.filename = assets/icon.png
-android.permissions = INTERNET,RECORD_AUDIO
+android.permissions = INTERNET
 p4a.branch = develop
 title = S...@security
 package.name = securityassistant
