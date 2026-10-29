@@ -124,19 +124,18 @@ class SecurityAssistantApp(App):
 
     def reset_page(self, title, subtitle=""):
         self.page.clear_widgets()
-
-        self.page.add_widget(
-            self.label(title, 23, GREEN, 55)
-        )
+        self.page.add_widget(self.label(title, 23, GREEN, 55))
 
         if subtitle:
-            self.page.add_widget(
-                self.label(subtitle, 14, MUTED, 50)
-            )
+            self.page.add_widget(self.label(subtitle, 14, MUTED, 55))
 
         self.page.add_widget(
-            self.button("⌂ Main Dashboard", self.show_dashboard)
+            self.button("⌂ मुख्यपृष्ठ", self.show_dashboard, 50)
         )
+        if title != "☰ मुख्य मेनू":
+            self.page.add_widget(
+                self.button("☰ मुख्य मेनू", self.menu_page, 50)
+            )
 
     def message(self, title, message):
         content = BoxLayout(
@@ -191,77 +190,146 @@ class SecurityAssistantApp(App):
         except Exception:
             pass
 
-    # MAIN DASHBOARD
+    # MAIN DASHBOARD AND NAVIGATION
 
     def show_dashboard(self):
         self.page.clear_widgets()
 
         logo_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "assets",
-            "images",
-            "cyber_lock.png"
+            "assets", "images", "cyber_lock.png"
         )
 
         if os.path.exists(logo_path):
-            logo = Image(
+            self.page.add_widget(Image(
                 source=logo_path,
                 size_hint=(1, None),
-                height=dp(155),
+                height=dp(125),
                 allow_stretch=True,
                 keep_ratio=True
-            )
-            self.page.add_widget(logo)
+            ))
         else:
-            self.page.add_widget(
-                self.label("🔐", 55, GREEN, 100)
-            )
+            self.page.add_widget(self.label("🔐", 48, GREEN, 85))
 
+        self.page.add_widget(self.label("सुरक्षा सहाय्यक", 27, GREEN, 52))
         self.page.add_widget(
-            self.label("SECURITY ASSISTANT", 23, GREEN, 48)
+            self.label("तुमच्या मोबाइल सुरक्षेसाठी एकाच ठिकाणी साधने",
+                       14, MUTED, 55)
         )
-
-        self.page.add_widget(
-            self.label("SMART MOBILE PROTECTION", 15, WHITE, 38)
-        )
-
-        self.page.add_widget(
-            self.label(
-                "Your mobile security, all in one place",
-                16,
-                MUTED,
-                55
-            )
-        )
-
-        self.page.add_widget(
-            self.label("✓ SECURITY DASHBOARD", 18, GREEN, 45)
-        )
+        self.page.add_widget(self.label("● सुरक्षा केंद्र", 18, GREEN, 40))
 
         options = [
-            ("🔐  Secure Vault", self.vault),
-            ("📱  App Permission Checker", self.permissions),
-            ("📶  Wi-Fi Security", self.wifi_security),
-            ("🛡️  Firewall Security", self.firewall_security),
-
-            ("🔗  Fake Link Checker", self.link_checker),
-            ("📋  Security Activity Log", self.activity_log),
-            ("🛡️  Mobile Protection", self.mobile_protection)
+            ("🔐  सुरक्षित फाइल व्हॉल्ट", self.vault),
+            ("🧰  सर्व सुरक्षा साधने", self.tools_page),
+            ("📱  ॲप परवानगी तपासणी", self.permissions),
+            ("📶  Wi-Fi सुरक्षा", self.wifi_security),
+            ("🛡️  Firewall माहिती", self.firewall_security),
+            ("🔗  संशयास्पद लिंक तपासा", self.link_checker),
+            ("📋  सुरक्षा इतिहास", self.activity_log),
+            ("⚙️  सेटिंग्ज", self.settings_page),
+            ("❔  मदत", self.help_page),
+            ("ℹ️  ॲपविषयी", self.about_page),
         ]
 
         for title, callback in options:
-            self.page.add_widget(
-                self.button(title, callback, 56)
-            )
+            self.page.add_widget(self.button(title, callback, 58))
 
-        self.page.add_widget(
-            self.label(
-                "Stay safe • Avoid suspicious links",
-                13,
-                MUTED,
-                45
-            )
+        self.page.add_widget(self.label(
+            "सूचना: Firewall प्रत्यक्ष नेटवर्क ट्रॅफिक ब्लॉक करत नाही.",
+            13, MUTED, 55
+        ))
+        self.page.add_widget(self.label(
+            "सुरक्षित रहा • अनोळखी लिंक आणि APK टाळा",
+            13, MUTED, 45
+        ))
+
+    def menu_page(self):
+        self.reset_page("☰ मुख्य मेनू", "आवश्यक विभाग निवडा")
+
+        options = [
+            ("🏠  मुख्यपृष्ठ", self.show_dashboard),
+            ("🧰  सुरक्षा साधने", self.tools_page),
+            ("🔐  सुरक्षित फाइल व्हॉल्ट", self.vault),
+            ("📱  ॲप परवानग्या", self.permissions),
+            ("📶  Wi-Fi सुरक्षा", self.wifi_security),
+            ("🛡️  Firewall माहिती", self.firewall_security),
+            ("🔗  लिंक तपासणी", self.link_checker),
+            ("📋  इतिहास", self.activity_log),
+            ("⚙️  सेटिंग्ज", self.settings_page),
+            ("❔  मदत", self.help_page),
+            ("ℹ️  ॲपविषयी", self.about_page),
+        ]
+
+        for title, callback in options:
+            self.page.add_widget(self.button(title, callback, 54))
+
+    def tools_page(self):
+        self.reset_page("🧰 सुरक्षा साधने", "तुम्हाला आवश्यक साधन निवडा")
+
+        options = [
+            ("🔐 सुरक्षित फाइल व्हॉल्ट", self.vault),
+            ("📱 ॲप परवानगी तपासणी", self.permissions),
+            ("📶 Wi-Fi सुरक्षा मार्गदर्शन", self.wifi_security),
+            ("🛡️ Firewall स्थिती", self.firewall_security),
+            ("🔗 संशयास्पद लिंक तपासणी", self.link_checker),
+            ("📋 सुरक्षा इतिहास", self.activity_log),
+            ("🛡️ मोबाइल संरक्षण", self.mobile_protection),
+        ]
+
+        for title, callback in options:
+            self.page.add_widget(self.button(title, callback, 58))
+
+    def settings_page(self):
+        self.reset_page("⚙️ सेटिंग्ज", "ॲप आणि मोबाइलच्या सुरक्षा सेटिंग्ज")
+
+        self.page.add_widget(self.label(
+            "या आवृत्तीत स्वतंत्र थीम किंवा भाषा बदलण्याची सुविधा नाही.",
+            14, MUTED, 65
+        ))
+        self.page.add_widget(self.button(
+            "📱 या ॲपच्या Android सेटिंग्ज उघडा",
+            self.open_app_settings, 58
+        ))
+        self.page.add_widget(self.button(
+            "🔐 सुरक्षित फाइल व्हॉल्ट",
+            self.vault, 58
+        ))
+        self.page.add_widget(self.button(
+            "📋 सुरक्षा इतिहास पाहा",
+            self.activity_log, 58
+        ))
+
+    def help_page(self):
+        self.reset_page("❔ मदत", "सुरक्षा सहाय्यक कसा वापरावा")
+
+        help_text = (
+            "• सुरक्षित फाइल व्हॉल्ट: PIN वापरून फाइल एन्क्रिप्ट किंवा Restore करा.\n\n"
+            "• लिंक तपासणी: संशयास्पद लिंकची प्राथमिक तपासणी करा.\n\n"
+            "• Wi-Fi सुरक्षा: सुरक्षित नेटवर्क वापरण्याच्या सूचना वाचा.\n\n"
+            "• ॲप परवानग्या: Android सेटिंग्जमध्ये परवानग्या तपासा.\n\n"
+            "• इतिहास: ॲपमध्ये नोंदवलेल्या काही क्रिया पाहा.\n\n"
+            "ही साधने संपूर्ण मोबाइल स्कॅन करत नाहीत. "
+            "लिंक तपासणी सुरक्षिततेची हमी देत नाही."
         )
+        self.page.add_widget(self.label(help_text, 14, WHITE, 300))
+
+    def about_page(self):
+        self.reset_page("ℹ️ ॲपविषयी", "Security Assistant")
+
+        self.page.add_widget(self.label(
+            "तुमच्या मोबाइल सुरक्षेसाठी तयार केलेले सहाय्यक ॲप.",
+            16, WHITE, 70
+        ))
+        self.page.add_widget(self.label(
+            "उपलब्ध सुविधा: सुरक्षित फाइल व्हॉल्ट, प्राथमिक लिंक तपासणी, "
+            "Wi-Fi मार्गदर्शन, परवानगी तपासणी आणि सुरक्षा इतिहास.",
+            14, MUTED, 110
+        ))
+        self.page.add_widget(self.label(
+            "महत्त्वाचे: Firewall ट्रॅफिक फिल्टरिंग सक्रिय नाही. "
+            "हे ॲप पूर्ण अँटीव्हायरस किंवा संपूर्ण डिव्हाइस स्कॅनर नाही.",
+            14, GREEN, 100
+        ))
 
     # SECURE VAULT
 
