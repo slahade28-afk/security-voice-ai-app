@@ -93,7 +93,7 @@ class SecurityAssistantApp(App):
     def label(self, text, size=15, color=WHITE, height=45):
         return Label(
             text=text,
-            font_name="Roboto",
+            font_name=FONT,
             font_size=dp(size),
             color=color,
             size_hint_y=None,
@@ -102,17 +102,23 @@ class SecurityAssistantApp(App):
             valign="middle"
         )
 
-    def button(self, text, callback, height=50):
+    def button(self, text, callback, height=56):
         btn = Button(
             text=text,
-            font_name="Roboto",
+            font_name=FONT,
             font_size=dp(15),
-            size_hint_y=None,
+            size_hint=(1, None),
             height=dp(height),
             background_normal="",
+            background_down="",
             background_color=CARD,
-            color=WHITE
+            color=WHITE,
+            halign="center",
+            valign="middle"
         )
+        btn.bind(size=lambda instance, value: setattr(
+            instance, "text_size", (value[0] - dp(20), None)
+        ))
         btn.bind(on_release=lambda *_: callback())
         return btn
 
