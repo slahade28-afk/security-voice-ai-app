@@ -850,44 +850,76 @@ class SecurityAssistantApp(App):
 
     def firewall_security(self):
         self.reset_page(
-            "🛡️ FIREWALL SECURITY",
-            "NETWORK SECURITY GUIDANCE"
+            "SMART FIREWALL",
+            "NETWORK PROTECTION CENTER"
         )
 
-        tips = [
-            "✓ Avoid unfamiliar Wi-Fi networks.",
-            "✓ Check VPN settings in Android.",
-            "✓ Read the privacy policy of any VPN service you trust.",
-            "✓ Avoid unnecessary VPN profiles.",
-            "✓ Review suspicious apps and their permissions.",
-            "⚠️ This screen does not block network traffic by itself."
-        ]
-
-        for tip in tips:
-            self.page.add_widget(
-                self.label(tip, 14, WHITE, 58)
+        self.page.add_widget(
+            self.label(
+                "FIREWALL ENGINE: NOT ACTIVE",
+                18, WHITE, 45
             )
+        )
+
+        self.page.add_widget(
+            self.label(
+                "Network Monitor: Not Active",
+                14, WHITE, 35
+            )
+        )
+
+        self.page.add_widget(
+            self.label(
+                "App Network Rules: Not Configured",
+                14, WHITE, 35
+            )
+        )
+
+        self.page.add_widget(
+            self.label(
+                "Firewall Activity and Controls",
+                17, GREEN, 45
+            )
+        )
 
         def open_vpn_settings():
             try:
                 from jnius import autoclass
 
-                Settings = autoclass("android.provider.Settings")
-                Intent = autoclass("android.content.Intent")
+                Settings = autoclass(
+                    "android.provider.Settings"
+                )
+                Intent = autoclass(
+                    "android.content.Intent"
+                )
                 activity = autoclass(
                     "org.kivy.android.PythonActivity"
                 ).mActivity
 
-                intent = Intent(Settings.ACTION_VPN_SETTINGS)
+                intent = Intent(
+                    Settings.ACTION_VPN_SETTINGS
+                )
                 activity.startActivity(intent)
-
-                self.log("Firewall", "Opened Android VPN settings")
+                self.log(
+                    "Firewall",
+                    "Opened Android VPN settings"
+                )
 
             except Exception:
                 self.message(
                     "VPN Settings",
-                    "Find and open VPN in Android Settings."
+                    "Open VPN from Android Settings."
                 )
+
+        def run_readiness_check():
+            self.log(
+                "Firewall",
+                "Readiness check requested; traffic blocking is not implemented"
+            )
+            self.message(
+                "Firewall Readiness",
+                "Dashboard is available. Real traffic filtering is not installed yet."
+            )
 
         self.page.add_widget(
             self.button(
@@ -898,17 +930,24 @@ class SecurityAssistantApp(App):
 
         self.page.add_widget(
             self.button(
-                "Log Security Check",
-                lambda: (
-                    self.log("Firewall", "Security guidance viewed"),
-                    self.message(
-                        "Firewall",
-                        "Activity logged. Firewall protection is not actually active on the phone."
-                    )
-                )
+                "Check Firewall Readiness",
+                run_readiness_check
             )
         )
 
+        self.page.add_widget(
+            self.button(
+                "View Security Activity Log",
+                self.activity_log
+            )
+        )
+
+        self.page.add_widget(
+            self.label(
+                "Next: Android VPN service and traffic filtering engine.",
+                13, WHITE, 55
+            )
+        )
     # FAKE LINK CHECKER
 
     def link_checker(self):

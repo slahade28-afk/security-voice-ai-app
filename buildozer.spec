@@ -1,8 +1,9 @@
 
 [app]
+icon.filename = assets/icon.png
 android.permissions = INTERNET,RECORD_AUDIO
 p4a.branch = develop
-title = Security Voice Command AI
+title = S...@security
 package.name = securityassistant
 package.domain = org.securityai
 source.dir = .
