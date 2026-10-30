@@ -37,11 +37,42 @@ if os.path.exists("NotoSansDevanagari.ttf"):
     )
     FONT = "MarathiFont"
 
-BG = (0.035, 0.055, 0.09, 1)
-CARD = (0.075, 0.105, 0.16, 1)
-GREEN = (0.0, 0.85, 0.57, 1)
-WHITE = (0.94, 0.97, 1, 1)
-MUTED = (0.65, 0.72, 0.81, 1)
+THEMES = {
+    "Dark Green": {
+        "BG": (0.035, 0.055, 0.09, 1),
+        "CARD": (0.075, 0.105, 0.16, 1),
+        "GREEN": (0.0, 0.85, 0.57, 1),
+        "WHITE": (0.94, 0.97, 1, 1),
+        "MUTED": (0.65, 0.72, 0.81, 1),
+    },
+    "Light": {
+        "BG": (0.94, 0.96, 0.98, 1),
+        "CARD": (1, 1, 1, 1),
+        "GREEN": (0.0, 0.42, 0.28, 1),
+        "WHITE": (0.08, 0.11, 0.15, 1),
+        "MUTED": (0.30, 0.36, 0.43, 1),
+    },
+    "Blue": {
+        "BG": (0.025, 0.07, 0.14, 1),
+        "CARD": (0.06, 0.14, 0.25, 1),
+        "GREEN": (0.20, 0.72, 1, 1),
+        "WHITE": (0.94, 0.97, 1, 1),
+        "MUTED": (0.62, 0.74, 0.86, 1),
+    },
+    "Purple": {
+        "BG": (0.075, 0.035, 0.13, 1),
+        "CARD": (0.15, 0.08, 0.23, 1),
+        "GREEN": (0.78, 0.48, 1, 1),
+        "WHITE": (0.97, 0.94, 1, 1),
+        "MUTED": (0.76, 0.68, 0.84, 1),
+    },
+}
+
+BG = THEMES["Dark Green"]["BG"]
+CARD = THEMES["Dark Green"]["CARD"]
+GREEN = THEMES["Dark Green"]["GREEN"]
+WHITE = THEMES["Dark Green"]["WHITE"]
+MUTED = THEMES["Dark Green"]["MUTED"]
 
 
 class SecurityAssistantApp(App):
@@ -56,6 +87,9 @@ class SecurityAssistantApp(App):
 
         self.pin_file = os.path.join(self.base, "vault_pin.json")
         self.log_file = os.path.join(self.base, "activity.json")
+        self.theme_file = os.path.join(self.base, "theme.json")
+        self.current_theme = "Dark Green"
+        self.load_theme()
 
         self.vault_pin = None
         self.pin_failed_attempts = 0
@@ -90,7 +124,70 @@ class SecurityAssistantApp(App):
 
         return root
 
-    def label(self, text, size=15, color=WHITE, height=45):
+    def load_theme(self):
+        try:
+            with open(self.theme_file, encoding="utf-8") as f:
+                saved = json.load(f)
+            name = saved.get("theme", "Dark Green")
+            if name in THEMES:
+                self.current_theme = name
+        except Exception:
+            self.current_theme = "Dark Green"
+
+        self.set_theme_colors()
+
+    def set_theme_colors(self):
+        global BG, CARD, GREEN, WHITE, MUTED
+        colors = THEMES[self.current_theme]
+        BG = colors["BG"]
+        CARD = colors["CARD"]
+        GREEN = colors["GREEN"]
+        WHITE = colors["WHITE"]
+        MUTED = colors["MUTED"]
+        Window.clearcolor = BG
+
+    def apply_theme(self, name):
+        if name not in THEMES:
+            return
+
+        self.current_theme = name
+        self.set_theme_colors()
+
+        try:
+            with open(self.theme_file, "w", encoding="utf-8") as f:
+                json.dump({"theme": name}, f)
+        except Exception as exc:
+            self.message("Theme", "Could not save theme: " + str(exc))
+            return
+
+        self.log("Theme", name)
+        self.settings_page()
+        self.message("Theme Updated", name + " theme is now active.")
+
+    def settings_page(self):
+        self.reset_page("⚙️ SETTINGS", "Choose your app appearance")
+        self.page.add_widget(self.label("THEME", 18, GREEN, 42))
+
+        for name in ("Dark Green", "Light", "Blue", "Purple"):
+            label = name + ("  ✓ ACTIVE" if name == self.current_theme else "")
+            self.page.add_widget(
+                self.button(
+                    label,
+                    lambda name=name: self.apply_theme(name),
+                    56
+                )
+            )
+
+        self.page.add_widget(
+            self.label("Your theme is saved automatically.", 13, MUTED, 48)
+        )
+        self.page.add_widget(
+            self.button("Open Android App Settings", self.open_app_settings, 54)
+        )
+
+    def label(self, text, size=15, color=None, height=45):
+        if color is None:
+            color = WHITE
         return Label(
             text=text,
             font_name=FONT,
@@ -102,40 +199,35 @@ class SecurityAssistantApp(App):
             valign="middle"
         )
 
-    def button(self, text, callback, height=56):
+    def button(self, text, callback, height=50):
         btn = Button(
             text=text,
             font_name=FONT,
             font_size=dp(15),
-            size_hint=(1, None),
+            size_hint_y=None,
             height=dp(height),
             background_normal="",
-            background_down="",
             background_color=CARD,
-            color=WHITE,
-            halign="center",
-            valign="middle"
+            color=WHITE
         )
-        btn.bind(size=lambda instance, value: setattr(
-            instance, "text_size", (value[0] - dp(20), None)
-        ))
         btn.bind(on_release=lambda *_: callback())
         return btn
 
     def reset_page(self, title, subtitle=""):
         self.page.clear_widgets()
-        self.page.add_widget(self.label(title, 23, GREEN, 55))
-
-        if subtitle:
-            self.page.add_widget(self.label(subtitle, 14, MUTED, 55))
 
         self.page.add_widget(
-            self.button("⌂ मुख्यपृष्ठ", self.show_dashboard, 50)
+            self.label(title, 23, GREEN, 55)
         )
-        if title != "☰ मुख्य मेनू":
+
+        if subtitle:
             self.page.add_widget(
-                self.button("☰ मुख्य मेनू", self.menu_page, 50)
+                self.label(subtitle, 14, MUTED, 50)
             )
+
+        self.page.add_widget(
+            self.button("⌂ Main Dashboard", self.show_dashboard)
+        )
 
     def message(self, title, message):
         content = BoxLayout(
@@ -190,146 +282,79 @@ class SecurityAssistantApp(App):
         except Exception:
             pass
 
-    # MAIN DASHBOARD AND NAVIGATION
+    # MAIN DASHBOARD
 
     def show_dashboard(self):
         self.page.clear_widgets()
 
         logo_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "assets", "images", "cyber_lock.png"
+            "assets",
+            "images",
+            "cyber_lock.png"
         )
 
         if os.path.exists(logo_path):
-            self.page.add_widget(Image(
+            logo = Image(
                 source=logo_path,
                 size_hint=(1, None),
-                height=dp(125),
+                height=dp(155),
                 allow_stretch=True,
                 keep_ratio=True
-            ))
+            )
+            self.page.add_widget(logo)
         else:
-            self.page.add_widget(self.label("🔐", 48, GREEN, 85))
+            self.page.add_widget(
+                self.label("🔐", 55, GREEN, 100)
+            )
 
-        self.page.add_widget(self.label("सुरक्षा सहाय्यक", 27, GREEN, 52))
         self.page.add_widget(
-            self.label("तुमच्या मोबाइल सुरक्षेसाठी एकाच ठिकाणी साधने",
-                       14, MUTED, 55)
+            self.label("SECURITY ASSISTANT", 23, GREEN, 48)
         )
-        self.page.add_widget(self.label("● सुरक्षा केंद्र", 18, GREEN, 40))
 
-        options = [
-            ("🔐  सुरक्षित फाइल व्हॉल्ट", self.vault),
-            ("🧰  सर्व सुरक्षा साधने", self.tools_page),
-            ("📱  ॲप परवानगी तपासणी", self.permissions),
-            ("📶  Wi-Fi सुरक्षा", self.wifi_security),
-            ("🛡️  Firewall माहिती", self.firewall_security),
-            ("🔗  संशयास्पद लिंक तपासा", self.link_checker),
-            ("📋  सुरक्षा इतिहास", self.activity_log),
-            ("⚙️  सेटिंग्ज", self.settings_page),
-            ("❔  मदत", self.help_page),
-            ("ℹ️  ॲपविषयी", self.about_page),
-        ]
-
-        for title, callback in options:
-            self.page.add_widget(self.button(title, callback, 58))
-
-        self.page.add_widget(self.label(
-            "सूचना: Firewall प्रत्यक्ष नेटवर्क ट्रॅफिक ब्लॉक करत नाही.",
-            13, MUTED, 55
-        ))
-        self.page.add_widget(self.label(
-            "सुरक्षित रहा • अनोळखी लिंक आणि APK टाळा",
-            13, MUTED, 45
-        ))
-
-    def menu_page(self):
-        self.reset_page("☰ मुख्य मेनू", "आवश्यक विभाग निवडा")
-
-        options = [
-            ("🏠  मुख्यपृष्ठ", self.show_dashboard),
-            ("🧰  सुरक्षा साधने", self.tools_page),
-            ("🔐  सुरक्षित फाइल व्हॉल्ट", self.vault),
-            ("📱  ॲप परवानग्या", self.permissions),
-            ("📶  Wi-Fi सुरक्षा", self.wifi_security),
-            ("🛡️  Firewall माहिती", self.firewall_security),
-            ("🔗  लिंक तपासणी", self.link_checker),
-            ("📋  इतिहास", self.activity_log),
-            ("⚙️  सेटिंग्ज", self.settings_page),
-            ("❔  मदत", self.help_page),
-            ("ℹ️  ॲपविषयी", self.about_page),
-        ]
-
-        for title, callback in options:
-            self.page.add_widget(self.button(title, callback, 54))
-
-    def tools_page(self):
-        self.reset_page("🧰 सुरक्षा साधने", "तुम्हाला आवश्यक साधन निवडा")
-
-        options = [
-            ("🔐 सुरक्षित फाइल व्हॉल्ट", self.vault),
-            ("📱 ॲप परवानगी तपासणी", self.permissions),
-            ("📶 Wi-Fi सुरक्षा मार्गदर्शन", self.wifi_security),
-            ("🛡️ Firewall स्थिती", self.firewall_security),
-            ("🔗 संशयास्पद लिंक तपासणी", self.link_checker),
-            ("📋 सुरक्षा इतिहास", self.activity_log),
-            ("🛡️ मोबाइल संरक्षण", self.mobile_protection),
-        ]
-
-        for title, callback in options:
-            self.page.add_widget(self.button(title, callback, 58))
-
-    def settings_page(self):
-        self.reset_page("⚙️ सेटिंग्ज", "ॲप आणि मोबाइलच्या सुरक्षा सेटिंग्ज")
-
-        self.page.add_widget(self.label(
-            "या आवृत्तीत स्वतंत्र थीम किंवा भाषा बदलण्याची सुविधा नाही.",
-            14, MUTED, 65
-        ))
-        self.page.add_widget(self.button(
-            "📱 या ॲपच्या Android सेटिंग्ज उघडा",
-            self.open_app_settings, 58
-        ))
-        self.page.add_widget(self.button(
-            "🔐 सुरक्षित फाइल व्हॉल्ट",
-            self.vault, 58
-        ))
-        self.page.add_widget(self.button(
-            "📋 सुरक्षा इतिहास पाहा",
-            self.activity_log, 58
-        ))
-
-    def help_page(self):
-        self.reset_page("❔ मदत", "सुरक्षा सहाय्यक कसा वापरावा")
-
-        help_text = (
-            "• सुरक्षित फाइल व्हॉल्ट: PIN वापरून फाइल एन्क्रिप्ट किंवा Restore करा.\n\n"
-            "• लिंक तपासणी: संशयास्पद लिंकची प्राथमिक तपासणी करा.\n\n"
-            "• Wi-Fi सुरक्षा: सुरक्षित नेटवर्क वापरण्याच्या सूचना वाचा.\n\n"
-            "• ॲप परवानग्या: Android सेटिंग्जमध्ये परवानग्या तपासा.\n\n"
-            "• इतिहास: ॲपमध्ये नोंदवलेल्या काही क्रिया पाहा.\n\n"
-            "ही साधने संपूर्ण मोबाइल स्कॅन करत नाहीत. "
-            "लिंक तपासणी सुरक्षिततेची हमी देत नाही."
+        self.page.add_widget(
+            self.label("SMART MOBILE PROTECTION", 15, WHITE, 38)
         )
-        self.page.add_widget(self.label(help_text, 14, WHITE, 300))
 
-    def about_page(self):
-        self.reset_page("ℹ️ ॲपविषयी", "Security Assistant")
+        self.page.add_widget(
+            self.label(
+                "तुमच्या मोबाईलची सुरक्षा, एकाच ठिकाणी",
+                16,
+                MUTED,
+                55
+            )
+        )
 
-        self.page.add_widget(self.label(
-            "तुमच्या मोबाइल सुरक्षेसाठी तयार केलेले सहाय्यक ॲप.",
-            16, WHITE, 70
-        ))
-        self.page.add_widget(self.label(
-            "उपलब्ध सुविधा: सुरक्षित फाइल व्हॉल्ट, प्राथमिक लिंक तपासणी, "
-            "Wi-Fi मार्गदर्शन, परवानगी तपासणी आणि सुरक्षा इतिहास.",
-            14, MUTED, 110
-        ))
-        self.page.add_widget(self.label(
-            "महत्त्वाचे: Firewall ट्रॅफिक फिल्टरिंग सक्रिय नाही. "
-            "हे ॲप पूर्ण अँटीव्हायरस किंवा संपूर्ण डिव्हाइस स्कॅनर नाही.",
-            14, GREEN, 100
-        ))
+        self.page.add_widget(
+            self.label("✓ SECURITY DASHBOARD", 18, GREEN, 45)
+        )
+
+        options = [
+            ("🔐  Secure Vault", self.vault),
+            ("📱  App Permission Checker", self.permissions),
+            ("📶  Wi-Fi Security", self.wifi_security),
+            ("🔗  Fake Link Checker", self.link_checker),
+            ("📋  Security Activity Log", self.activity_log),
+            ("🛡️  Mobile Protection", self.mobile_protection)
+        ]
+
+        for title, callback in options:
+            self.page.add_widget(
+                self.button(title, callback, 56)
+            )
+
+        self.page.add_widget(
+            self.button("⚙️  Settings & Themes", self.settings_page, 56)
+        )
+
+        self.page.add_widget(
+            self.label(
+                "सुरक्षित रहा • संशयास्पद लिंक टाळा",
+                13,
+                MUTED,
+                45
+            )
+        )
 
     # SECURE VAULT
 
@@ -351,7 +376,7 @@ class SecurityAssistantApp(App):
         if not os.path.exists(self.pin_file):
             self.page.add_widget(
                 self.label(
-                    "Create a new PIN with at least 6 digits.",
+                    "किमान 6 अंकांचा नवीन PIN तयार करा.",
                     14,
                     WHITE,
                     55
@@ -381,14 +406,14 @@ class SecurityAssistantApp(App):
                 if not pin.text.isdigit() or len(pin.text) < 6:
                     self.message(
                         "PIN",
-                        "Use a PIN with at least 6 digits."
+                        "किमान 6 अंकांचा PIN वापरा."
                     )
                     return
 
                 if pin.text != confirm.text:
                     self.message(
                         "PIN",
-                        "The PINs do not match."
+                        "दोन्ही PIN जुळत नाहीत."
                     )
                     return
 
@@ -433,7 +458,7 @@ class SecurityAssistantApp(App):
                 remaining = int(self.pin_lockout_until - now) + 1
                 self.message(
                     "Vault",
-                    f"Too many failed attempts. Wait {remaining} seconds."
+                    f"खूप चुकीचे प्रयत्न झाले. {remaining} सेकंद थांबा."
                 )
                 return
 
@@ -464,18 +489,18 @@ class SecurityAssistantApp(App):
 
                         self.message(
                             "Vault",
-                            "3 incorrect PIN attempts. Vault locked for 30 seconds."
+                            "3 चुकीचे PIN. Vault 30 सेकंद लॉक."
                         )
                     else:
                         self.message(
                             "Vault",
-                            f"Incorrect PIN. Attempts remaining: {remaining}"
+                            f"चुकीचा PIN. उरलेले प्रयत्न: {remaining}"
                         )
 
             except Exception:
                 self.message(
                     "Vault",
-                    "Could not read PIN data."
+                    "PIN माहिती वाचता आली नाही."
                 )
 
         self.page.add_widget(
@@ -625,7 +650,7 @@ class SecurityAssistantApp(App):
 
         self.page.add_widget(
             self.label(
-                "The original file is not deleted automatically. Verify the restored file.",
+                "मूळ फाइल आपोआप हटवली जात नाही. Restore तपासून पाहा.",
                 13,
                 MUTED,
                 75
@@ -652,7 +677,7 @@ class SecurityAssistantApp(App):
 
             if not files:
                 self.page.add_widget(
-                    self.label("No files available yet.", 14)
+                    self.label("अजून कोणतीही फाइल नाही.", 14)
                 )
 
             for name in files:
@@ -671,7 +696,7 @@ class SecurityAssistantApp(App):
         except Exception as exc:
             self.page.add_widget(
                 self.label(
-                    "File chooser unavailable: " + str(exc),
+                    "File chooser उपलब्ध नाही: " + str(exc),
                     12,
                     MUTED,
                     70
@@ -701,7 +726,7 @@ class SecurityAssistantApp(App):
 
             self.message(
                 "Encryption Successful",
-                "File encrypted. The original file has not been deleted."
+                "फाइल एन्क्रिप्ट झाली. मूळ फाइल हटवलेली नाही."
             )
 
             self.vault_files()
@@ -750,7 +775,7 @@ class SecurityAssistantApp(App):
 
                 self.message(
                     "Save Restored File",
-                    "In the Android save window, select Downloads or another folder."
+                    "Android save window मध्ये Downloads किंवा दुसरे फोल्डर निवडा."
                 )
 
             except Exception:
@@ -771,7 +796,7 @@ class SecurityAssistantApp(App):
             if result_code != -1 or intent is None:
                 self.message(
                     "Restore Cancelled",
-                    "File was not saved."
+                    "फाइल सेव्ह केलेली नाही."
                 )
                 return
 
@@ -806,7 +831,7 @@ class SecurityAssistantApp(App):
 
             self.message(
                 "Restore Successful",
-                "File saved successfully."
+                "फाइल यशस्वीपणे सेव्ह झाली."
             )
 
         except Exception as exc:
@@ -832,12 +857,12 @@ class SecurityAssistantApp(App):
     def permissions(self):
         self.reset_page(
             "📱 APP PERMISSIONS",
-            "APP PERMISSIONS"
+            "मोबाईल ॲप परवानग्या"
         )
 
         self.page.add_widget(
             self.label(
-                "Check Camera, Microphone, Location, and Photos permissions in Android Settings.",
+                "Camera, Microphone, Location आणि Photos परवानग्या Android Settings मध्ये तपासा.",
                 14,
                 WHITE,
                 100
@@ -856,7 +881,7 @@ class SecurityAssistantApp(App):
                 "Privacy Dashboard Guide",
                 lambda: self.message(
                     "Privacy",
-                    "Open Settings → Security & privacy → Privacy dashboard."
+                    "Settings → Security & privacy → Privacy dashboard उघडा."
                 )
             )
         )
@@ -888,7 +913,7 @@ class SecurityAssistantApp(App):
         except Exception:
             self.message(
                 "Settings",
-                "Open Android Settings → Apps → Security Assistant."
+                "Android Settings → Apps → Security Assistant उघडा."
             )
 
     # WI-FI SECURITY
@@ -896,15 +921,15 @@ class SecurityAssistantApp(App):
     def wifi_security(self):
         self.reset_page(
             "📶 WI-FI SECURITY",
-            "WI-FI SECURITY TIPS"
+            "Wi-Fi सुरक्षित ठेवण्यासाठी सूचना"
         )
 
         tips = [
-            "• Avoid banking on unfamiliar Wi-Fi networks.",
-            "• Use a strong password for your router.",
-            "• Use WPA2 or WPA3.",
-            "• Disable auto-connect to unfamiliar networks.",
-            "• Be careful when sending sensitive information over public Wi-Fi."
+            "• अनोळखी Wi-Fi वर बँकिंग टाळा.",
+            "• Router साठी मजबूत पासवर्ड ठेवा.",
+            "• WPA2 किंवा WPA3 वापरा.",
+            "• अनोळखी नेटवर्कचे Auto-connect बंद करा.",
+            "• सार्वजनिक Wi-Fi वर संवेदनशील माहिती पाठवताना काळजी घ्या."
         ]
 
         for tip in tips:
@@ -919,120 +944,17 @@ class SecurityAssistantApp(App):
             )
         )
 
-
-    # FIREWALL SECURITY
-
-    def firewall_security(self):
-        self.reset_page(
-            "SMART FIREWALL",
-            "NETWORK PROTECTION CENTER"
-        )
-
-        self.page.add_widget(
-            self.label(
-                "FIREWALL ENGINE: NOT ACTIVE",
-                18, WHITE, 45
-            )
-        )
-
-        self.page.add_widget(
-            self.label(
-                "Network Monitor: Not Active",
-                14, WHITE, 35
-            )
-        )
-
-        self.page.add_widget(
-            self.label(
-                "App Network Rules: Not Configured",
-                14, WHITE, 35
-            )
-        )
-
-        self.page.add_widget(
-            self.label(
-                "Firewall Activity and Controls",
-                17, GREEN, 45
-            )
-        )
-
-        def open_vpn_settings():
-            try:
-                from jnius import autoclass
-
-                Settings = autoclass(
-                    "android.provider.Settings"
-                )
-                Intent = autoclass(
-                    "android.content.Intent"
-                )
-                activity = autoclass(
-                    "org.kivy.android.PythonActivity"
-                ).mActivity
-
-                intent = Intent(
-                    Settings.ACTION_VPN_SETTINGS
-                )
-                activity.startActivity(intent)
-                self.log(
-                    "Firewall",
-                    "Opened Android VPN settings"
-                )
-
-            except Exception:
-                self.message(
-                    "VPN Settings",
-                    "Open VPN from Android Settings."
-                )
-
-        def run_readiness_check():
-            self.log(
-                "Firewall",
-                "Readiness check requested; traffic blocking is not implemented"
-            )
-            self.message(
-                "Firewall Readiness",
-                "Dashboard is available. Real traffic filtering is not installed yet."
-            )
-
-        self.page.add_widget(
-            self.button(
-                "Open Android VPN Settings",
-                open_vpn_settings
-            )
-        )
-
-        self.page.add_widget(
-            self.button(
-                "Check Firewall Readiness",
-                run_readiness_check
-            )
-        )
-
-        self.page.add_widget(
-            self.button(
-                "View Security Activity Log",
-                self.activity_log
-            )
-        )
-
-        self.page.add_widget(
-            self.label(
-                "Next: Android VPN service and traffic filtering engine.",
-                13, WHITE, 55
-            )
-        )
     # FAKE LINK CHECKER
 
     def link_checker(self):
         self.reset_page(
             "🔗 FAKE LINK CHECKER",
-            "CHECK SUSPICIOUS LINKS"
+            "संशयास्पद लिंक तपासा"
         )
 
         self.page.add_widget(
             self.label(
-                "Paste a link below to check it.",
+                "तपासण्यासाठी लिंक खाली पेस्ट करा.",
                 14,
                 WHITE,
                 45
@@ -1047,7 +969,7 @@ class SecurityAssistantApp(App):
         )
 
         result = self.label(
-            "The scan result will appear here.",
+            "तपासणीचा निकाल येथे दिसेल.",
             13,
             WHITE,
             110
@@ -1061,31 +983,31 @@ class SecurityAssistantApp(App):
             issues = []
 
             if not url:
-                result.text = "Please enter a link."
+                result.text = "कृपया लिंक टाका."
                 return
 
             if not re.match(r"^https?://", url, re.I):
-                issues.append("Missing http:// or https://")
+                issues.append("http:// किंवा https:// नाही")
 
             if "@" in url:
-                issues.append("The link contains an @ symbol.")
+                issues.append("लिंकमध्ये @ चिन्ह आहे")
 
             if re.search(
                 r"(login|verify|gift|free-prize|password)",
                 url,
                 re.I
             ):
-                issues.append("Suspicious keywords detected.")
+                issues.append("संशयास्पद शब्द आढळले")
 
             if re.match(
                 r"^https?://\d{1,3}(?:\.\d{1,3}){3}",
                 url,
                 re.I
             ):
-                issues.append("The link uses a direct IP address.")
+                issues.append("लिंक थेट IP address वापरते")
 
             if issues:
-                result.text = "⚠️ WARNING!\n" + "\n".join(issues)
+                result.text = "⚠️ सावधान!\n" + "\n".join(issues)
 
                 self.log(
                     "Link Checker",
@@ -1094,8 +1016,8 @@ class SecurityAssistantApp(App):
 
             else:
                 result.text = (
-                    "No obvious warning signs were detected. "
-                    "However, this does not guarantee that the link is safe."
+                    "ठळक धोक्याची चिन्हे आढळली नाहीत. "
+                    "तरीही ही लिंक सुरक्षित असल्याची खात्री नाही."
                 )
 
                 self.log(
@@ -1112,7 +1034,7 @@ class SecurityAssistantApp(App):
     def activity_log(self):
         self.reset_page(
             "📋 ACTIVITY LOG",
-            "SECURITY ACTIVITY LOG"
+            "ॲपमधील नोंदवलेल्या क्रिया"
         )
 
         try:
@@ -1125,7 +1047,7 @@ class SecurityAssistantApp(App):
         if not entries:
             self.page.add_widget(
                 self.label(
-                    "No activity recorded yet.",
+                    "अजून कोणतीही नोंद नाही.",
                     14,
                     WHITE,
                     45
@@ -1149,16 +1071,16 @@ class SecurityAssistantApp(App):
     def mobile_protection(self):
         self.reset_page(
             "🛡️ MOBILE PROTECTION",
-            "MOBILE SECURITY TIPS"
+            "मोबाईल सुरक्षा सूचना"
         )
 
         tips = [
-            "✓ Keep Android updated.",
-            "✓ Keep Google Play Protect enabled.",
-            "✓ Use a screen lock and a strong PIN.",
-            "✓ Do not install APKs from unknown sources.",
-            "✓ Back up important files.",
-            "✓ Disable unnecessary app permissions."
+            "✓ Android अपडेट ठेवा.",
+            "✓ Google Play Protect सुरू ठेवा.",
+            "✓ स्क्रीन लॉक आणि मजबूत PIN वापरा.",
+            "✓ अनोळखी APK इन्स्टॉल करू नका.",
+            "✓ महत्त्वाच्या फाइल्सचा बॅकअप ठेवा.",
+            "✓ अनावश्यक ॲप परवानग्या बंद करा."
         ]
 
         for tip in tips:
