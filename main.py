@@ -508,24 +508,156 @@ class SecurityAssistantApp(App):
     def menu_page(self):
         self.reset_page(
             "☰ MAIN MENU",
-            "Security Assistant मधील विभाग"
+            "Security Assistant — Main Options"
         )
 
         menu_items = [
-            ("🧱 Firewall", self.firewall_page),
-            ("🔐 Secure Vault", self.vault),
-            ("📱 App Permissions", self.permissions),
-            ("📶 Wi-Fi Security", self.wifi_security),
-            ("🔗 Fake Link Checker", self.link_checker),
-            ("📋 Activity Log", self.activity_log),
-            ("🛡️ Mobile Protection", self.mobile_protection),
+            ("ℹ️ About", self.about_page),
+            ("🔄 Check for Updates", self.check_updates),
             ("⚙️ Settings & Themes", self.settings_page),
+            ("❓ Help", self.help_page),
+            ("♻️ Reset App", self.reset_app),
+            ("🚪 Exit App", self.exit_app),
         ]
 
         for title, callback in menu_items:
             self.page.add_widget(
                 self.button(title, callback, 54)
             )
+
+    def about_page(self):
+        self.reset_page(
+            "ℹ️ ABOUT",
+            "Security Assistant"
+        )
+        self.page.add_widget(
+            self.label(
+                "Version: 11.0.0\nCreated by Samadhan Lahade\nBuilt with AI-assisted development.",
+                15, WHITE, 130
+            )
+        )
+
+    def check_updates(self):
+        self.message(
+            "Checking Updates",
+            "GitHub वरील नवीन आवृत्ती तपासत आहोत..."
+        )
+
+        try:
+            from kivy.network.urlrequest import UrlRequest
+
+            def success(req, result):
+                tag = result.get("tag_name", "Unknown")
+                url = result.get("html_url", "")
+                latest = tag.lstrip("vV")
+
+                if latest == "11.0.0":
+                    msg = "तुमचे अॅप नवीन आवृत्तीवर आहे.\nLatest: " + tag
+                else:
+                    msg = "नवीन Release उपलब्ध आहे: " + tag
+                    if url:
+                        msg += "\nGitHub: " + url
+
+                self.message("Update Check", msg)
+
+            def failure(req, error):
+                self.message(
+                    "Update Check",
+                    "अपडेट तपासता आले नाही. इंटरनेट कनेक्शन तपासा."
+                )
+
+            UrlRequest(
+                "https://api.github.com/repos/slahade28-afk/security-voice-ai-app/releases/latest",
+                on_success=success,
+                on_failure=failure,
+                on_error=failure,
+                req_headers={"User-Agent": "Security-Assistant-App"}
+            )
+
+        except Exception as exc:
+            self.message("Update Check", "Update तपासताना अडचण आली: " + str(exc))
+
+    def help_page(self):
+        self.reset_page(
+            "❓ HELP",
+            "Security Assistant वापरण्यासाठी मदत"
+        )
+        help_text = (
+            "Secure Vault — PIN वापरून फाइल्स सुरक्षित ठेवा.\n"
+            "App Permissions — अॅप परवानग्या तपासा.\n"
+            "Wi-Fi Security — Wi-Fi सुरक्षिततेच्या सूचना.\n"
+            "Fake Link Checker — संशयास्पद लिंक तपासा.\n"
+            "Activity Log — अॅपमधील नोंदी पाहा.\n"
+            "Mobile Protection — मोबाइल सुरक्षा सूचना."
+        )
+        self.page.add_widget(
+            self.label(help_text, 14, WHITE, 230)
+        )
+
+    def reset_app(self):
+        content = BoxLayout(
+            orientation="vertical",
+            padding=dp(12),
+            spacing=dp(12)
+        )
+
+        content.add_widget(
+            self.label(
+                "अॅपची Settings आणि Activity Log रीसेट होतील.\n\n"
+                "Vault मधील फोटो, व्हिडिओ, फाइल्स आणि PIN सुरक्षित राहतील.\n\n"
+                "तुम्हाला खात्री आहे का?",
+                14, WHITE, 145
+            )
+        )
+
+        buttons = BoxLayout(
+            size_hint_y=None,
+            height=dp(48),
+            spacing=dp(10)
+        )
+
+        popup = Popup(
+            title="Confirm App Reset",
+            content=content,
+            size_hint=(0.9, None),
+            height=dp(270),
+            auto_dismiss=False
+        )
+
+        cancel = Button(text="Cancel")
+        cancel.bind(on_release=popup.dismiss)
+
+        confirm = Button(text="Reset")
+
+        def do_reset(*args):
+            try:
+                if os.path.exists(self.theme_file):
+                    os.remove(self.theme_file)
+
+                if os.path.exists(self.log_file):
+                    os.remove(self.log_file)
+
+                self.current_theme = "Dark Green"
+                self.set_theme_colors()
+                popup.dismiss()
+                self.show_dashboard()
+                self.message(
+                    "Reset Complete",
+                    "अॅप रीसेट झाले. Vault मधील फाइल्स आणि PIN सुरक्षित आहेत."
+                )
+
+            except Exception as exc:
+                popup.dismiss()
+                self.message("Reset Error", str(exc))
+
+        confirm.bind(on_release=do_reset)
+        buttons.add_widget(cancel)
+        buttons.add_widget(confirm)
+        content.add_widget(buttons)
+        popup.open()
+
+    def exit_app(self):
+        App.get_running_app().stop()
 
     # SECURE VAULT
 
