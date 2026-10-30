@@ -15,7 +15,6 @@ fullscreen = 0
 icon.filename = assets/icon.png
 
 android.permissions = INTERNET,FOREGROUND_SERVICE
-android.extra_manifest_xml = android_src/firewall_manifest.xml
 android.add_src = android_src
 
 p4a.branch = develop
