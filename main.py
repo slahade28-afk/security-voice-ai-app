@@ -199,7 +199,42 @@ class SecurityAssistantApp(App):
             valign="middle"
         )
 
-    def button(self, text, callback, height=50):
+    def button(self, text, callback, height=50, icon=None):
+        if icon:
+            row = BoxLayout(
+                orientation="horizontal",
+                size_hint_y=None,
+                height=dp(height),
+                spacing=dp(10),
+                padding=[dp(10), dp(4), dp(10), dp(4)]
+            )
+
+            icon_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "assets", "images", icon
+            )
+
+            if os.path.exists(icon_path):
+                row.add_widget(Image(
+                    source=icon_path,
+                    size_hint=(None, 1),
+                    width=dp(34),
+                    allow_stretch=True,
+                    keep_ratio=True
+                ))
+
+            btn = Button(
+                text=text,
+                font_name=FONT,
+                font_size=dp(15),
+                background_normal="",
+                background_color=CARD,
+                color=WHITE
+            )
+            btn.bind(on_release=lambda *_: callback())
+            row.add_widget(btn)
+            return row
+
         btn = Button(
             text=text,
             font_name=FONT,
@@ -337,21 +372,21 @@ class SecurityAssistantApp(App):
         )
 
         options = [
-            ("🔐  Secure Vault", self.vault),
-            ("📱  App Permission Checker", self.permissions),
-            ("📶  Wi-Fi Security", self.wifi_security),
-            ("🔗  Fake Link Checker", self.link_checker),
-            ("📋  Security Activity Log", self.activity_log),
-            ("🛡️  Mobile Protection", self.mobile_protection)
+            ("Secure Vault", self.vault, "vault.png"),
+            ("App Permission Checker", self.permissions, "mobile.png"),
+            ("Wi-Fi Security", self.wifi_security, "wifi.png"),
+            ("Fake Link Checker", self.link_checker, "link.png"),
+            ("Security Activity Log", self.activity_log, "activity.png"),
+            ("Mobile Protection", self.mobile_protection, "shield.png")
         ]
 
-        for title, callback in options:
+        for title, callback, icon in options:
             self.page.add_widget(
-                self.button(title, callback, 56)
+                self.button(title, callback, 56, icon=icon)
             )
 
         self.page.add_widget(
-            self.button("⚙️  Settings & Themes", self.settings_page, 56)
+            self.button("Settings & Themes", self.settings_page, 56, icon="settings.png")
         )
 
         self.page.add_widget(
