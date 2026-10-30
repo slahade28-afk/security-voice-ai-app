@@ -40,11 +40,11 @@ if os.path.exists("NotoSansDevanagari.ttf"):
 
 THEMES = {
     "Dark Green": {
-        "BG": (0.035, 0.055, 0.09, 1),
-        "CARD": (0.075, 0.105, 0.16, 1),
-        "GREEN": (0.0, 0.85, 0.57, 1),
-        "WHITE": (0.94, 0.97, 1, 1),
-        "MUTED": (0.65, 0.72, 0.81, 1),
+        "BG": (0.018, 0.027, 0.052, 1),
+        "CARD": (0.055, 0.085, 0.14, 1),
+        "GREEN": (0.12, 0.62, 1.0, 1),
+        "WHITE": (0.93, 0.96, 1, 1),
+        "MUTED": (0.62, 0.70, 0.81, 1),
     },
     "Light": {
         "BG": (0.94, 0.96, 0.98, 1),
@@ -123,7 +123,14 @@ class SecurityAssistantApp(App):
         except Exception:
             pass
 
+        Window.bind(on_keyboard=self.on_keyboard)
         return root
+
+    def on_keyboard(self, window, key, *args):
+        if key == 27:
+            self.show_dashboard()
+            return True
+        return False
 
     def load_theme(self):
         try:
@@ -251,19 +258,18 @@ class SecurityAssistantApp(App):
 
     def reset_page(self, title, subtitle=""):
         self.page.clear_widgets()
-
-        self.page.add_widget(
-            self.label(title, 23, GREEN, 55)
+        header = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(48),
+            spacing=dp(8)
         )
-
+        header.add_widget(self.button("← Back", self.show_dashboard, 44))
+        header.add_widget(self.button("☰", self.menu_page, 44))
+        self.page.add_widget(header)
+        self.page.add_widget(self.label(title, 22, GREEN, 52))
         if subtitle:
-            self.page.add_widget(
-                self.label(subtitle, 14, MUTED, 50)
-            )
-
-        self.page.add_widget(
-            self.button("⌂ Main Dashboard", self.show_dashboard)
-        )
+            self.page.add_widget(self.label(subtitle, 14, MUTED, 48))
 
     def message(self, title, message):
         content = BoxLayout(
@@ -363,111 +369,54 @@ class SecurityAssistantApp(App):
     def show_dashboard(self):
         self.page.clear_widgets()
 
+        top = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(58),
+            spacing=dp(8)
+        )
         logo_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "assets", "images", "cyber_lock.png"
         )
-
         if os.path.exists(logo_path):
-            self.page.add_widget(Image(
-                source=logo_path,
-                size_hint=(1, None),
-                height=dp(145),
-                allow_stretch=True,
-                keep_ratio=True
+            top.add_widget(Image(
+                source=logo_path, size_hint=(None, 1),
+                width=dp(54), allow_stretch=True, keep_ratio=True
             ))
-        else:
-            self.page.add_widget(
-                self.label("🔐", 55, GREEN, 100)
-            )
+        title_box = BoxLayout(orientation="vertical")
+        title_box.add_widget(self.label("SECURITY ASSISTANT", 17, GREEN, 30))
+        title_box.add_widget(self.label("MOBILE SECURITY CENTER", 9, MUTED, 22))
+        top.add_widget(title_box)
+        top.add_widget(self.button("☰", self.menu_page, 48))
+        self.page.add_widget(top)
 
-        self.page.add_widget(
-            self.label("SECURITY ASSISTANT", 23, GREEN, 45)
-        )
-
-        self.page.add_widget(
-            self.label("SMART MOBILE PROTECTION", 14, WHITE, 32)
-        )
-
-        self.page.add_widget(
-            self.label(
-                "तुमच्या मोबाईलची सुरक्षा, एकाच ठिकाणी",
-                15, MUTED, 45
-            )
-        )
-
-        self.page.add_widget(
-            self.label("✓ SECURITY DASHBOARD", 18, GREEN, 42)
-        )
-
-        top_buttons = BoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(55),
-            spacing=dp(10)
-        )
-
-        firewall_btn = Button(
-            text="FIREWALL",
-            font_name=FONT,
-            font_size=dp(14),
-            background_normal="",
-            background_color=CARD,
-            color=GREEN
-        )
-        firewall_btn.bind(
-            on_release=lambda *_: self.firewall_page()
-        )
-
-        menu_btn = Button(
-            text="MENU",
-            font_name=FONT,
-            font_size=dp(14),
-            background_normal="",
-            background_color=CARD,
-            color=GREEN
-        )
-        menu_btn.bind(
-            on_release=lambda *_: self.menu_page()
-        )
-
-        top_buttons.add_widget(firewall_btn)
-        top_buttons.add_widget(menu_btn)
-        self.page.add_widget(top_buttons)
+        self.page.add_widget(self.label("SMART MOBILE PROTECTION", 14, WHITE, 34))
+        self.page.add_widget(self.label(
+            "तुमच्या मोबाईलची सुरक्षा, एकाच ठिकाणी", 14, MUTED, 42
+        ))
+        self.page.add_widget(self.label("SECURITY DASHBOARD", 18, GREEN, 42))
 
         tools = [
+            ("Firewall", self.firewall_page, "shield.png"),
             ("Secure Vault", self.vault, "vault.png"),
             ("App Permissions", self.permissions, "mobile.png"),
-            ("Wi-Fi Security", self.wifi_security, "wifi.png"),
             ("Fake Link Checker", self.link_checker, "link.png"),
             ("Activity Log", self.activity_log, "activity.png"),
             ("Mobile Protection", self.mobile_protection, "shield.png"),
-            ("Settings & Themes", self.settings_page, "settings.png"),
         ]
-
         grid = GridLayout(
-            cols=2,
-            spacing=dp(10),
-            size_hint_y=None,
+            cols=2, spacing=dp(10), size_hint_y=None,
             padding=[0, dp(5), 0, dp(5)]
         )
         grid.bind(minimum_height=grid.setter("height"))
-
         for title, callback, icon in tools:
-            grid.add_widget(
-                self.dashboard_card(title, callback, icon)
-            )
-
+            grid.add_widget(self.dashboard_card(title, callback, icon))
         self.page.add_widget(grid)
+        self.page.add_widget(self.label(
+            "सुरक्षित रहा • संशयास्पद लिंक टाळा", 13, MUTED, 45
+        ))
 
-        self.page.add_widget(
-            self.label(
-                "सुरक्षित रहा • संशयास्पद लिंक टाळा",
-                13, MUTED, 45
-            )
-        )
-
-    # FIREWALL INFORMATION PAGE
     def firewall_page(self):
         self.reset_page(
             "🧱 FIREWALL",
@@ -506,24 +455,42 @@ class SecurityAssistantApp(App):
 
     # MAIN MENU PAGE
     def menu_page(self):
-        self.reset_page(
-            "☰ MAIN MENU",
-            "Security Assistant — Main Options"
-        )
-
+        self.reset_page("☰ MENU", "Security Assistant — Main Options")
         menu_items = [
-            ("ℹ️ About", self.about_page),
-            ("🔄 Check for Updates", self.check_updates),
-            ("⚙️ Settings & Themes", self.settings_page),
-            ("❓ Help", self.help_page),
-            ("♻️ Reset App", self.reset_app),
-            ("🚪 Exit App", self.exit_app),
+            ("1. Tool", self.show_dashboard),
+            ("2. Version", self.about_page),
+            ("3. Update", self.check_updates),
+            ("4. Site", self.site_page),
+            ("5. Setting", self.settings_page),
+            ("6. Reset App", self.reset_app),
+            ("7. About", self.about_page),
+            ("8. Exit", self.exit_app),
         ]
-
         for title, callback in menu_items:
-            self.page.add_widget(
-                self.button(title, callback, 54)
-            )
+            self.page.add_widget(self.button(title, callback, 54))
+
+    def site_page(self):
+        self.reset_page("🌐 SITE", "Official project page")
+        self.page.add_widget(self.label(
+            "Security Assistant चा GitHub प्रकल्प उघडा.", 14, WHITE, 60
+        ))
+        self.page.add_widget(self.button(
+            "Open GitHub",
+            lambda: self.open_site(),
+            54
+        ))
+
+    def open_site(self):
+        url = "https://github.com/slahade28-afk/security-voice-ai-app"
+        try:
+            from jnius import autoclass
+            Intent = autoclass("android.content.Intent")
+            Uri = autoclass("android.net.Uri")
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            PythonActivity.mActivity.startActivity(intent)
+        except Exception:
+            self.message("GitHub", url)
 
     def about_page(self):
         self.reset_page(
@@ -585,7 +552,6 @@ class SecurityAssistantApp(App):
         help_text = (
             "Secure Vault — PIN वापरून फाइल्स सुरक्षित ठेवा.\n"
             "App Permissions — अॅप परवानग्या तपासा.\n"
-            "Wi-Fi Security — Wi-Fi सुरक्षिततेच्या सूचना.\n"
             "Fake Link Checker — संशयास्पद लिंक तपासा.\n"
             "Activity Log — अॅपमधील नोंदी पाहा.\n"
             "Mobile Protection — मोबाइल सुरक्षा सूचना."
@@ -1218,34 +1184,6 @@ class SecurityAssistantApp(App):
                 "Settings",
                 "Android Settings → Apps → Security Assistant उघडा."
             )
-
-    # WI-FI SECURITY
-
-    def wifi_security(self):
-        self.reset_page(
-            "📶 WI-FI SECURITY",
-            "Wi-Fi सुरक्षित ठेवण्यासाठी सूचना"
-        )
-
-        tips = [
-            "• अनोळखी Wi-Fi वर बँकिंग टाळा.",
-            "• Router साठी मजबूत पासवर्ड ठेवा.",
-            "• WPA2 किंवा WPA3 वापरा.",
-            "• अनोळखी नेटवर्कचे Auto-connect बंद करा.",
-            "• सार्वजनिक Wi-Fi वर संवेदनशील माहिती पाठवताना काळजी घ्या."
-        ]
-
-        for tip in tips:
-            self.page.add_widget(
-                self.label(tip, 14, WHITE, 60)
-            )
-
-        self.page.add_widget(
-            self.button(
-                "Log Activity",
-                lambda: self.log("Wi-Fi", "Viewed tips")
-            )
-        )
 
     # FAKE LINK CHECKER
 
