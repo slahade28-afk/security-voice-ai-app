@@ -329,6 +329,13 @@ class SecurityAssistantApp(App):
             self.label("✓ SECURITY DASHBOARD", 18, GREEN, 45)
         )
 
+        self.page.add_widget(
+            self.button("🧱  FIREWALL", self.firewall_page, 58)
+        )
+        self.page.add_widget(
+            self.button("☰  MENU", self.menu_page, 58)
+        )
+
         options = [
             ("🔐  Secure Vault", self.vault),
             ("📱  App Permission Checker", self.permissions),
@@ -355,6 +362,66 @@ class SecurityAssistantApp(App):
                 45
             )
         )
+
+    # FIREWALL INFORMATION PAGE
+    def firewall_page(self):
+        self.reset_page(
+            "🧱 FIREWALL",
+            "नेटवर्क सुरक्षा"
+        )
+
+        self.page.add_widget(
+            self.label(
+                "Firewall सध्या या ॲपमध्ये प्रत्यक्ष नेटवर्क फिल्टरिंग करत नाही.",
+                15,
+                WHITE,
+                90
+            )
+        )
+        self.page.add_widget(
+            self.label(
+                "खालील बटण VPN Firewall जोडण्यासाठीची स्थिती दाखवते. "
+                "ते सक्रिय संरक्षण समजू नका.",
+                13,
+                MUTED,
+                90
+            )
+        )
+        self.page.add_widget(
+            self.button(
+                "ℹ️ Firewall Setup Status",
+                lambda: self.message(
+                    "Firewall Status",
+                    "Firewall सेवा अजून पूर्णपणे जोडलेली/तपासलेली नाही. "
+                    "प्रत्यक्ष ट्रॅफिक ब्लॉकिंग सुरू नाही."
+                ),
+                54
+            )
+        )
+        self.log("Firewall", "Opened firewall information page")
+
+    # MAIN MENU PAGE
+    def menu_page(self):
+        self.reset_page(
+            "☰ MAIN MENU",
+            "Security Assistant मधील विभाग"
+        )
+
+        menu_items = [
+            ("🧱 Firewall", self.firewall_page),
+            ("🔐 Secure Vault", self.vault),
+            ("📱 App Permissions", self.permissions),
+            ("📶 Wi-Fi Security", self.wifi_security),
+            ("🔗 Fake Link Checker", self.link_checker),
+            ("📋 Activity Log", self.activity_log),
+            ("🛡️ Mobile Protection", self.mobile_protection),
+            ("⚙️ Settings & Themes", self.settings_page),
+        ]
+
+        for title, callback in menu_items:
+            self.page.add_widget(
+                self.button(title, callback, 54)
+            )
 
     # SECURE VAULT
 
