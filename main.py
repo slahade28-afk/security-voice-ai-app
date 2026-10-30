@@ -15,6 +15,7 @@ from kivy.core.text import LabelBase
 from kivy.metrics import dp
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -317,84 +318,152 @@ class SecurityAssistantApp(App):
         except Exception:
             pass
 
-    # MAIN DASHBOARD
+    # DASHBOARD TOOL CARD
+    def dashboard_card(self, title, callback, icon):
+        card = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            height=dp(132),
+            padding=dp(7),
+            spacing=dp(4)
+        )
 
+        icon_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "assets", "images", icon
+        )
+
+        if os.path.exists(icon_path):
+            card.add_widget(Image(
+                source=icon_path,
+                size_hint=(1, None),
+                height=dp(76),
+                allow_stretch=True,
+                keep_ratio=True
+            ))
+        else:
+            card.add_widget(self.label("🛡️", 30, GREEN, 76))
+
+        btn = Button(
+            text=title,
+            font_name=FONT,
+            font_size=dp(12),
+            size_hint=(1, None),
+            height=dp(40),
+            background_normal="",
+            background_color=CARD,
+            color=WHITE
+        )
+        btn.bind(on_release=lambda *_: callback())
+        card.add_widget(btn)
+
+        return card
+
+    # MAIN DASHBOARD
     def show_dashboard(self):
         self.page.clear_widgets()
 
         logo_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "assets",
-            "images",
-            "cyber_lock.png"
+            "assets", "images", "cyber_lock.png"
         )
 
         if os.path.exists(logo_path):
-            logo = Image(
+            self.page.add_widget(Image(
                 source=logo_path,
                 size_hint=(1, None),
-                height=dp(155),
+                height=dp(145),
                 allow_stretch=True,
                 keep_ratio=True
-            )
-            self.page.add_widget(logo)
+            ))
         else:
             self.page.add_widget(
                 self.label("🔐", 55, GREEN, 100)
             )
 
         self.page.add_widget(
-            self.label("SECURITY ASSISTANT", 23, GREEN, 48)
+            self.label("SECURITY ASSISTANT", 23, GREEN, 45)
         )
 
         self.page.add_widget(
-            self.label("SMART MOBILE PROTECTION", 15, WHITE, 38)
+            self.label("SMART MOBILE PROTECTION", 14, WHITE, 32)
         )
 
         self.page.add_widget(
             self.label(
                 "तुमच्या मोबाईलची सुरक्षा, एकाच ठिकाणी",
-                16,
-                MUTED,
-                55
+                15, MUTED, 45
             )
         )
 
         self.page.add_widget(
-            self.label("✓ SECURITY DASHBOARD", 18, GREEN, 45)
+            self.label("✓ SECURITY DASHBOARD", 18, GREEN, 42)
         )
 
-        self.page.add_widget(
-            self.button("🧱  FIREWALL", self.firewall_page, 58)
-        )
-        self.page.add_widget(
-            self.button("☰  MENU", self.menu_page, 58)
+        top_buttons = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(55),
+            spacing=dp(10)
         )
 
-        options = [
+        firewall_btn = Button(
+            text="FIREWALL",
+            font_name=FONT,
+            font_size=dp(14),
+            background_normal="",
+            background_color=CARD,
+            color=GREEN
+        )
+        firewall_btn.bind(
+            on_release=lambda *_: self.firewall_page()
+        )
+
+        menu_btn = Button(
+            text="MENU",
+            font_name=FONT,
+            font_size=dp(14),
+            background_normal="",
+            background_color=CARD,
+            color=GREEN
+        )
+        menu_btn.bind(
+            on_release=lambda *_: self.menu_page()
+        )
+
+        top_buttons.add_widget(firewall_btn)
+        top_buttons.add_widget(menu_btn)
+        self.page.add_widget(top_buttons)
+
+        tools = [
             ("Secure Vault", self.vault, "vault.png"),
-            ("App Permission Checker", self.permissions, "mobile.png"),
+            ("App Permissions", self.permissions, "mobile.png"),
             ("Wi-Fi Security", self.wifi_security, "wifi.png"),
             ("Fake Link Checker", self.link_checker, "link.png"),
-            ("Security Activity Log", self.activity_log, "activity.png"),
-            ("Mobile Protection", self.mobile_protection, "shield.png")
+            ("Activity Log", self.activity_log, "activity.png"),
+            ("Mobile Protection", self.mobile_protection, "shield.png"),
+            ("Settings & Themes", self.settings_page, "settings.png"),
         ]
 
-        for title, callback, icon in options:
-            self.page.add_widget(
-                self.button(title, callback, 56, icon=icon)
+        grid = GridLayout(
+            cols=2,
+            spacing=dp(10),
+            size_hint_y=None,
+            padding=[0, dp(5), 0, dp(5)]
+        )
+        grid.bind(minimum_height=grid.setter("height"))
+
+        for title, callback, icon in tools:
+            grid.add_widget(
+                self.dashboard_card(title, callback, icon)
             )
 
-        self.page.add_widget(
-            self.button("Settings & Themes", self.settings_page, 56, icon="settings.png")
-        )
+        self.page.add_widget(grid)
 
         self.page.add_widget(
             self.label(
                 "सुरक्षित रहा • संशयास्पद लिंक टाळा",
-                13,
-                MUTED,
-                45
+                13, MUTED, 45
             )
         )
 
